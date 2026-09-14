@@ -1,0 +1,69 @@
+{% extends 'shared/base.html' %}
+{% block title %}Audit Logs{% endblock %}
+{% block page_title %}Audit Logs{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div>
+            <p class="card-title">Riwayat Aktivitas Sistem</p>
+            <p class="card-desc">200 aktivitas terbaru — siapa request, siapa ubah, dan tujuannya</p>
+        </div>
+        <div style="display:flex; gap: 8px;">
+            <a href="{{ url_for('admin.export_audit_logs_pdf') }}" class="btn btn-primary btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg>
+                Unduh Laporan (PDF)
+            </a>
+            <a href="{{ url_for('admin.export_audit_logs') }}" class="btn btn-secondary btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                Unduh (.xlsx)
+            </a>
+        </div>
+    </div>
+
+    {% if logs %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Waktu</th>
+                    <th>Actor</th>
+                    <th>Aksi</th>
+                    <th>Detail Perubahan</th>
+                    <th>Tujuan / Alasan</th>
+                    <th>Berita Acara</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td class="mono" style="color: var(--text-muted);">{{ log.created_at.strftime('%d %b %Y, %H:%M') if log.created_at else '-' }}</td>
+                    <td>{{ log.actor }}</td>
+                    <td>{{ log.action }}</td>
+                    <td style="color: var(--text-muted);">{{ log.detail or '-' }}</td>
+                    <td style="color: var(--text-muted);">{{ log.reason or '-' }}</td>
+                    <td>
+                        {% if log.has_berita_acara %}
+                        <a href="{{ url_for('admin.berita_acara', log_id=log.id) }}" class="btn btn-secondary btn-sm" target="_blank">
+                            {{ log.ref_no }}
+                        </a>
+                        {% else %}
+                        <span style="color: var(--text-faint); font-size: 12px;">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="stat-icon red" style="margin: 0 auto 14px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        </div>
+        <h4>Belum ada aktivitas tercatat</h4>
+        <p>Log akan otomatis muncul di sini setiap ada login, approval scheduler, atau perubahan konfigurasi/akun.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

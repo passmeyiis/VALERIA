@@ -1,0 +1,65 @@
+{% extends 'shared/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="card" style="border-left: 3px solid var(--success); margin-bottom: 20px;">
+    <p class="card-title" style="margin-bottom: 6px;">Status Layanan Jaringan Anda: <span style="color: var(--success);">AMAN</span></p>
+    <p class="card-desc">Halaman ini menampilkan ringkasan performa koneksi secara real-time dan data ketersediaan IP address.</p>
+</div>
+
+<div class="grid grid-2" style="margin-bottom: 20px;">
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="stat-value" style="color: var(--success);">Normal (Online)</div>
+        <div class="stat-label">Koneksi Aktif</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon cyan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <div class="stat-value">50 / 50 Mbps</div>
+        <div class="stat-label">Bandwidth Saat Ini</div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px; display:flex; align-items:center; justify-content:space-between; gap: 16px; flex-wrap: wrap;">
+    <div>
+        <p class="card-title" style="margin-bottom: 4px;">Data Ketersediaan IP Address</p>
+        <p class="card-desc">Periksa status penggunaan IP address langsung dari data sistem.</p>
+    </div>
+    <a href="{{ url_for('shared.ip_management') }}" class="btn btn-primary">
+        Buka Manajemen IP
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <p class="card-title">Grafik Performa Traffic Jaringan (Real-Time)</p>
+            <p class="card-desc">Auto-refresh setiap 10 detik</p>
+        </div>
+    </div>
+    <div class="chart-frame">
+        <img id="prtg-live-graph" src="{{ url_for('shared.api_prtg_chart') }}" alt="Grafik PRTG">
+    </div>
+    <div class="legend-row">
+        <span style="color: var(--text-faint); font-weight:600; margin-right:2px;">Keterangan:</span>
+        <div class="legend-item"><span class="legend-swatch" style="background:#F43F5E;"></span> Downtime (%)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#38BDF8;"></span> Response Time (msec)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#34D399;"></span> Min Response (msec)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#FBBF24;"></span> Max Response (msec)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#8B93A7;"></span> Packet Loss (%)</div>
+    </div>
+</div>
+
+<script>
+    setInterval(() => {
+        const img = document.getElementById('prtg-live-graph');
+        if (img) img.src = "{{ url_for('shared.api_prtg_chart') }}?t=" + new Date().getTime();
+    }, 10000);
+</script>
+{% endblock %}

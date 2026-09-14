@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Berita Acara {{ log.ref_no }} — Valeria</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body { background: #fff; color: #111; padding: 0; }
+        .ba-shell { max-width: 780px; margin: 0 auto; padding: 48px 56px; }
+        .ba-toolbar {
+            max-width: 780px; margin: 0 auto; padding: 16px 56px 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .ba-toolbar .btn-secondary { background: #12161F; color: #fff; }
+        .ba-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #E11D3C; padding-bottom: 18px; margin-bottom: 28px; }
+        .ba-head h1 { font-size: 20px; color: #111; }
+        .ba-head p { color: #666; font-size: 12px; margin-top: 2px; }
+        .ba-refno { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #E11D3C; font-weight: 700; }
+        .ba-title { text-align: center; margin-bottom: 28px; }
+        .ba-title h2 { font-size: 16px; text-transform: uppercase; letter-spacing: 0.04em; color: #111; }
+        .ba-title p { font-size: 12px; color: #666; margin-top: 4px; }
+        .ba-row { display: grid; grid-template-columns: 180px 12px 1fr; padding: 7px 0; font-size: 13.5px; }
+        .ba-row .label { color: #555; }
+        .ba-row .value { color: #111; font-weight: 500; }
+        .ba-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #E11D3C; margin: 26px 0 10px; }
+        .ba-box { background: #F7F7F9; border: 1px solid #E4E4E8; border-radius: 8px; padding: 14px 16px; font-size: 13.5px; line-height: 1.6; color: #222; }
+        .ba-sign { display: flex; justify-content: space-between; margin-top: 56px; }
+        .ba-sign div { text-align: center; width: 220px; }
+        .ba-sign .line { margin-top: 64px; border-top: 1px solid #999; padding-top: 6px; font-size: 12px; color: #555; }
+        .ba-sign .role { font-weight: 600; font-size: 13px; color: #111; }
+        .ba-footer { margin-top: 40px; font-size: 10.5px; color: #999; text-align: center; }
+
+        @media print {
+            .ba-toolbar { display: none; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ba-toolbar">
+        <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-secondary btn-sm">← Kembali ke Audit Logs</a>
+        <button onclick="window.print()" class="btn btn-secondary btn-sm">Unduh / Print sebagai PDF</button>
+    </div>
+
+    <div class="ba-shell">
+        <div class="ba-head">
+            <div>
+                <h1>VALERIA — by Infomedia</h1>
+                <p>Sistem Monitoring Jaringan &amp; Penjadwalan Layanan</p>
+            </div>
+            <div class="ba-refno">
+                No: {{ log.ref_no }}<br>
+                <span style="color:#666; font-weight:400;">{{ log.created_at.strftime('%d %B %Y, %H:%M') }} WIB</span>
+            </div>
+        </div>
+
+        <div class="ba-title">
+            <h2>Berita Acara {{ log.category }}</h2>
+            <p>Dokumen ini mencatat perubahan/tindakan yang dilakukan di dalam sistem Valeria untuk keperluan audit dan pertanggungjawaban.</p>
+        </div>
+
+        <div class="ba-row"><span class="label">Kategori</span><span>:</span><span class="value">{{ log.category }}</span></div>
+        <div class="ba-row"><span class="label">Jenis Tindakan</span><span>:</span><span class="value">{{ log.action }}</span></div>
+        <div class="ba-row"><span class="label">Dilakukan oleh</span><span>:</span><span class="value">{{ log.actor }}</span></div>
+        <div class="ba-row"><span class="label">Waktu</span><span>:</span><span class="value">{{ log.created_at.strftime('%d %B %Y, %H:%M:%S') }} WIB</span></div>
+
+        <p class="ba-section-title">Detail Perubahan</p>
+        <div class="ba-box">{{ log.detail or '-' }}</div>
+
+        <p class="ba-section-title">Tujuan / Alasan</p>
+        <div class="ba-box">{{ log.reason or 'Tidak ada catatan tujuan yang diberikan.' }}</div>
+
+        <div class="ba-sign">
+            <div>
+                <div class="line">
+                    <span class="role">{{ log.actor }}</span><br>
+                    Pemohon / Pelaksana
+                </div>
+            </div>
+            <div>
+                <div class="line">
+                    <span class="role">Admin Penyetuju</span><br>
+                    Mengetahui &amp; Menyetujui
+                </div>
+            </div>
+        </div>
+
+        <p class="ba-footer">Dokumen ini digenerate otomatis oleh sistem Valeria dan sah tanpa tanda tangan basah, mengikuti nomor referensi {{ log.ref_no }}.</p>
+    </div>
+</body>
+</html>

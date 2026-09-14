@@ -1,0 +1,175 @@
+{% extends "shared/base.html" %}
+{% block content %}
+<div class="container-fluid py-4 px-4" style="max-width: 1500px; margin: 0 auto;">
+    
+    <!-- HEADER & SWITCH TAHUN -->
+    <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-4">
+        <div>
+            <h2 class="fw-bold mb-2"><i class="fas fa-chart-bar text-danger me-2"></i>Executive Financial Summary {{ tahun }}</h2>
+            <p class="text-muted mb-0">Analisis dan rekapitulasi data terstruktur yang disinkronkan langsung dari file sumber Excel.</p>
+        </div>
+        
+        <!-- Switch Button Tahun (Modern Pill) -->
+        <div class="d-flex p-1 rounded-pill shadow-sm" style="background-color: var(--surface-2); border: 1px solid var(--border-strong); gap: 4px;">
+            <a href="{{ url_for('admin.summary_page', tahun=2024) }}" class="btn btn-sm px-4 py-2 fw-bold rounded-pill border-0" style="{% if tahun == 2024 %}background-color: var(--primary); color: #fff;{% else %}background-color: transparent; color: var(--text-muted);{% endif %}">2024</a>
+            <a href="{{ url_for('admin.summary_page', tahun=2025) }}" class="btn btn-sm px-4 py-2 fw-bold rounded-pill border-0" style="{% if tahun == 2025 %}background-color: var(--primary); color: #fff;{% else %}background-color: transparent; color: var(--text-muted);{% endif %}">2025</a>
+            <a href="{{ url_for('admin.summary_page', tahun=2026) }}" class="btn btn-sm px-4 py-2 fw-bold rounded-pill border-0" style="{% if tahun == 2026 %}background-color: var(--primary); color: #fff;{% else %}background-color: transparent; color: var(--text-muted);{% endif %}">2026</a>
+        </div>
+    </div>
+
+    <!-- SECTION 1: QUICK STATS CARDS -->
+    <div class="row g-4 mb-5">
+        <div class="col-xl-6">
+            <div class="card p-4 rounded-4 shadow-sm h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="small text-uppercase fw-bold tracking-wider" style="color: var(--text-muted);">Total Evaluated Revenue ({{ tahun }})</span>
+                        <h3 class="fw-bold mt-2 mb-0" id="cardTotalRev">Rp 0</h3>
+                    </div>
+                    <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-circle">
+                        <i class="fas fa-coins fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card p-4 rounded-4 shadow-sm h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="small text-uppercase fw-bold tracking-wider" style="color: var(--text-muted);">Total Project Recorded ({{ tahun }})</span>
+                        <h3 class="fw-bold mt-2 mb-0" id="cardTotalProj">0 Projects</h3>
+                    </div>
+                    <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-circle">
+                        <i class="fas fa-folder-open fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: GRAFIK TREN BULANAN (Terpisah) -->
+    <div class="card p-4 rounded-4 shadow mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="fas fa-chart-line text-warning me-2"></i>Grafik Tren Revenue Bulanan</h4>
+                <p class="text-muted small mb-0">Visualisasi performa penyerapan anggaran dan proyek per bulan di tahun {{ tahun }}</p>
+            </div>
+            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning px-3 py-2">Monthly Analytics</span>
+        </div>
+        <div style="height: 400px; position: relative;" class="py-2">
+            <canvas id="excelSumChart"></canvas>
+        </div>
+    </div>
+
+    <!-- SECTION 3: TABEL MATRIKS DETAIL SUMBER (Terpisah) -->
+    <div class="card p-4 rounded-4 shadow">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="fas fa-table text-danger me-2"></i>Matriks Detail Sumber Data ({{ tahun }})</h4>
+                <p class="text-muted small mb-0">Rincian tabel rekapitulasi lengkap yang ditarik dari sheet Sum {{ tahun }}</p>
+            </div>
+            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2">Structured Source Table</span>
+        </div>
+
+        <div class="table-responsive" style="max-height: 550px; overflow-y: auto;">
+            <table class="table table-hover mb-0 align-middle text-nowrap" style="font-size: 13px; border-collapse: separate; border-spacing: 0 6px;">
+                <tbody>
+                    {% for row in table_rows %}
+                    <tr style="background-color: var(--surface-2); transition: background 0.2s;" onmouseover="this.style.background='var(--surface-hover)'" onmouseout="this.style.background='var(--surface-2)'">
+                        {% for cell in row %}
+                        <td class="py-3 px-3 {% if loop.index0 == 0 %}fw-bold text-warning border-start border-3 border-danger{% endif %}" style="border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+                            {{ cell if cell is not none and cell != 'nan' else '-' }}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="20" class="text-center text-muted py-5">Data rekapitulasi untuk tahun {{ tahun }} tidak ditemukan.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Import Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const labels = {{ monthly_labels | default(chart_labels, true) | default([], true) | tojson }};
+    const dataValues = {{ monthly_revenues | default(chart_values, true) | default([], true) | tojson }};
+    const rawTotalRev = {{ total_revenue | default(0) | tojson }};
+    const rawTotalProj = {{ total_project | default(0) | tojson }};
+
+    // Format angka KPI Cards
+    document.getElementById('cardTotalRev').innerText = 'Rp ' + (parseFloat(rawTotalRev) || 0).toLocaleString('id-ID');
+    document.getElementById('cardTotalProj').innerText = (rawTotalProj || 0) + ' Projects';
+
+    // Render Grafik Bar Bulanan
+    const ctx = document.getElementById('excelSumChart').getContext('2d');
+    const barGradient = ctx.createLinearGradient(0, 0, 0, 400);
+    barGradient.addColorStop(0, 'rgba(245, 158, 11, 0.8)');
+    barGradient.addColorStop(1, 'rgba(245, 158, 11, 0.2)');
+
+    // Ambil warna dari CSS variable tema yang lagi aktif, biar chart otomatis
+    // menyesuaikan tanpa peduli dark/light mode (bukan hardcode abu-abu terang)
+    const rootStyles = getComputedStyle(document.documentElement);
+    const tickColor = rootStyles.getPropertyValue('--text-muted').trim() || '#94a3b8';
+    const gridColor = rootStyles.getPropertyValue('--border').trim() || 'rgba(255, 255, 255, 0.05)';
+
+    // Cegah error "Canvas is already in use" kalau script sempat jalan 2x
+    // (misal navigasi tanpa full page reload) yang bikin chart gak muncul sama sekali
+    const existingChart = Chart.getChart(ctx);
+    if (existingChart) existingChart.destroy();
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Revenue Bulanan',
+                data: dataValues,
+                backgroundColor: barGradient,
+                borderColor: '#f59e0b',
+                borderWidth: 1.5,
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    titleColor: '#f1f3f9',
+                    bodyColor: '#f1f3f9',
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            return ' Revenue: Rp ' + (context.raw || 0).toLocaleString('id-ID');
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { 
+                    ticks: { color: tickColor, font: { size: 11 } }, 
+                    grid: { display: false } 
+                },
+                y: { 
+                    ticks: { 
+                        color: tickColor,
+                        callback: function(value) {
+                            if (value >= 1000000000) return (value / 1000000000).toFixed(1) + ' M';
+                            if (value >= 1000000) return (value / 1000000).toFixed(1) + ' Jt';
+                            return value;
+                        }
+                    },
+                    grid: { color: gridColor }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

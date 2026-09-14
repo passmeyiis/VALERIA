@@ -1,0 +1,148 @@
+{% extends 'shared/base.html' %}
+{% block title %}Kelola Pengguna{% endblock %}
+{% block page_title %}Kelola Pengguna{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div>
+            <p class="card-title">Manajemen Akun Pengguna</p>
+            <p class="card-desc">{{ users|length }} akun terdaftar</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('modal-tambah').classList.add('open')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Tambah Akun
+        </button>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Nama Lengkap</th>
+                    <th>Role</th>
+                    <th>Dibuat</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td class="mono">{{ u.username }}</td>
+                    <td>{{ u.name }}</td>
+                    <td><span class="badge {{ u.role }}">{{ u.role }}</span></td>
+                    <td style="color: var(--text-muted);">{{ u.created_at.strftime('%d %b %Y') if u.created_at else '-' }}</td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm"
+                            onclick="openEditModal({{ u.id }}, '{{ u.username }}', '{{ u.name }}', '{{ u.role }}')">
+                            Edit
+                        </button>
+                        {% if u.id != session.user_id %}
+                        <form action="{{ url_for('admin.hapus_pengguna', user_id=u.id) }}" method="POST" style="display:inline;"
+                              onsubmit="return confirm('Yakin ingin menghapus akun {{ u.username }}?')">
+                            <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                        </form>
+                        {% else %}
+                        <span style="color: var(--text-faint); font-size: 12px;">akun kamu</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Belum ada pengguna.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Tambah Akun -->
+<div id="modal-tambah" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Tambah Akun Baru</h3>
+            <button class="modal-close" onclick="document.getElementById('modal-tambah').classList.remove('open')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form action="{{ url_for('admin.tambah_pengguna') }}" method="POST">
+            <div class="field">
+                <label>Username</label>
+                <input type="text" name="username" required>
+            </div>
+            <div class="field">
+                <label>Nama Lengkap</label>
+                <input type="text" name="name" required>
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input type="password" name="password" required>
+            </div>
+            <div class="field">
+                <label>Role</label>
+                <select name="role">
+                    <option value="klien">Klien</option>
+                    <option value="admin">Admin</option>
+                    <option value="superadmin">Super Admin</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Tujuan / Alasan <span style="color: var(--text-faint); font-weight:400;">(opsional, buat audit log)</span></label>
+                <input type="text" name="reason" placeholder="Contoh: akun baru untuk tim NOC">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-tambah').classList.remove('open')">Batal</button>
+                <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Edit Akun -->
+<div id="modal-edit" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Edit Akun: <span id="edit-username-label" class="mono"></span></h3>
+            <button class="modal-close" onclick="document.getElementById('modal-edit').classList.remove('open')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form id="form-edit" method="POST">
+            <div class="field">
+                <label>Nama Lengkap</label>
+                <input type="text" id="edit-name" name="name" required>
+            </div>
+            <div class="field">
+                <label>Password Baru <span style="color: var(--text-faint); font-weight:400;">(kosongkan jika tidak diubah)</span></label>
+                <input type="password" name="password" placeholder="Biarkan kosong jika tetap">
+            </div>
+            <div class="field">
+                <label>Role</label>
+                <select id="edit-role" name="role">
+                    <option value="klien">Klien</option>
+                    <option value="admin">Admin</option>
+                    <option value="superadmin">Super Admin</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Tujuan / Alasan <span style="color: var(--text-faint); font-weight:400;">(opsional, buat audit log)</span></label>
+                <input type="text" name="reason" placeholder="Contoh: naik jabatan jadi admin">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-edit').classList.remove('open')">Batal</button>
+                <button type="submit" class="btn btn-primary btn-sm">Perbarui</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(id, username, name, role) {
+        document.getElementById('edit-username-label').innerText = username;
+        document.getElementById('edit-name').value = name;
+        document.getElementById('edit-role').value = role;
+        document.getElementById('form-edit').action = '/kelola-pengguna/ubah/' + id;
+        document.getElementById('modal-edit').classList.add('open');
+    }
+</script>
+{% endblock %}

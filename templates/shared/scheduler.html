@@ -1,0 +1,135 @@
+{% extends 'shared/base.html' %}
+{% block title %}Scheduler{% endblock %}
+{% block page_title %}Bandwidth Scheduler{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+        <div>
+            <p class="card-title">Buat Request Jadwal Baru</p>
+            <p class="card-desc">Jadwal akan berstatus "Pending Admin" sampai disetujui.</p>
+        </div>
+    </div>
+    <form action="{{ url_for('shared.add_scheduler') }}" method="POST">
+        <div class="field-row">
+            <div class="field">
+                <label>Tanggal &amp; Jam Eksekusi</label>
+                <input type="datetime-local" name="schedule_time" required>
+            </div>
+            <div class="field">
+                <label>Bandwidth Tujuan (Mbps)</label>
+                <input type="number" name="target_bandwidth" placeholder="Contoh: 100" required>
+            </div>
+        </div>
+        <div class="field">
+            <label>Keterangan / Alasan</label>
+            <input type="text" name="notes" placeholder="Contoh: Acara meeting besar">
+        </div>
+        <button type="submit" class="btn btn-primary">Ajukan Jadwal</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <p class="card-title">Daftar Status Request Bandwidth</p>
+        </div>
+    </div>
+
+    {% if schedules %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Pemohon</th>
+                    <th>Jadwal Eksekusi</th>
+                    <th>Target Bandwidth</th>
+                    <th>Status</th>
+                    {% if session.role in ['admin', 'superadmin'] %}<th>Aksi</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in schedules %}
+                <tr>
+                    <td>{{ item.pemohon }}</td>
+                    <td style="color: var(--text-muted);">{{ item.schedule_time }}</td>
+                    <td style="color: var(--success); font-weight: 600;">{{ item.target_bandwidth }} Mbps</td>
+                    <td>
+                        {% if item.status == 'Pending Admin' %}
+                        <span class="badge pending">{{ item.status }}</span>
+                        {% elif 'Approved' in item.status %}
+                        <span class="badge approved">{{ item.status }}</span>
+                        {% else %}
+                        <span class="badge rejected">{{ item.status }}</span>
+                        {% endif %}
+                    </td>
+                    {% if session.role in ['admin', 'superadmin'] %}
+                    <td>
+                        {% if item.status == 'Pending Admin' %}
+                        <button type="button" class="btn btn-success btn-sm"
+                            onclick="openActionModal('{{ url_for('shared.approve_scheduler', schedule_id=item.id) }}', 'Approve', '{{ item.pemohon }}', '{{ item.target_bandwidth }}')">
+                            Approve
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm"
+                            onclick="openActionModal('{{ url_for('shared.reject_scheduler', schedule_id=item.id) }}', 'Reject', '{{ item.pemohon }}', '{{ item.target_bandwidth }}')">
+                            Reject
+                        </button>
+                        {% else %}
+                        <span style="color: var(--text-faint); font-size: 12px;">Selesai</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="stat-icon cyan" style="margin: 0 auto 14px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/></svg>
+        </div>
+        <h4>Belum ada jadwal perubahan bandwidth</h4>
+        <p>Buat pengajuan pertama lewat form di atas.</p>
+    </div>
+    {% endif %}
+</div>
+
+{% if session.role in ['admin', 'superadmin'] %}
+<!-- Modal konfirmasi Approve/Reject — wajib isi alasan supaya tercatat di Berita Acara -->
+<div id="modal-action" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="action-modal-title">Konfirmasi</h3>
+            <button class="modal-close" onclick="document.getElementById('modal-action').classList.remove('open')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <p id="action-modal-desc" style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;"></p>
+        <form id="form-action" method="POST">
+            <div class="field" style="margin-bottom: 8px;">
+                <label>Alasan / Catatan <span style="color: var(--danger);">*</span></label>
+                <textarea name="reason" rows="3" placeholder="Contoh: kapasitas tersedia, sesuai kebutuhan acara" required></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-action').classList.remove('open')">Batal</button>
+                <button type="submit" id="action-modal-submit" class="btn btn-primary btn-sm">Konfirmasi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openActionModal(actionUrl, type, pemohon, bandwidth) {
+        document.getElementById('form-action').action = actionUrl;
+        document.getElementById('action-modal-title').innerText = type + ' Jadwal';
+        document.getElementById('action-modal-desc').innerText =
+            type + ' pengajuan dari ' + pemohon + ' (' + bandwidth + ' Mbps)?';
+        const submitBtn = document.getElementById('action-modal-submit');
+        submitBtn.className = type === 'Approve' ? 'btn btn-success btn-sm' : 'btn btn-danger btn-sm';
+        submitBtn.innerText = type;
+        document.getElementById('modal-action').classList.add('open');
+    }
+</script>
+{% endif %}
+{% endblock %}

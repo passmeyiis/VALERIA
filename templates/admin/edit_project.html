@@ -1,0 +1,37 @@
+{% extends "shared/base.html" %}
+{% block title %}Edit Project{% endblock %}
+{% block page_title %}Edit Project{% endblock %}
+
+{% block content %}
+<div style="padding: 20px 0; max-width: 800px;">
+    <div style="margin-bottom: 20px;">
+        <a href="{{ url_for('admin.list_projects') }}" style="color: #58a6ff; text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;">
+            &larr; Kembali ke Daftar Projects
+        </a>
+    </div>
+
+    <div style="background-color: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+        <form method="POST">
+            {% for key, val in project.items() %}
+                {% if key != 'id' %}
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; color: #c9d1d9; font-size: 13px; font-weight: 600; margin-bottom: 6px; text-transform: capitalize;">
+                        {{ key | replace('_', ' ') }}
+                    </label>
+                    <input type="text" name="{{ key }}" value="{{ val }}" style="width: 100%; background-color: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 10px 14px; color: #c9d1d9; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#ff3366'" onblur="this.style.borderColor='#30363d'">
+                </div>
+                {% endif %}
+            {% endfor %}
+
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button type="submit" style="background-color: #ff3366; color: white; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; font-size: 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 51, 102, 0.3);">
+                    Simpan Perubahan
+                </button>
+                <a href="{{ url_for('admin.list_projects') }}" style="background-color: #21262d; color: #c9d1d9; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #30363d; display: inline-block;">
+                    Batal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends 'shared/base.html' %}
+{% block title %}Dashboard Admin{% endblock %}
+{% block page_title %}Dashboard Admin{% endblock %}
+
+{% block content %}
+<div class="grid grid-3" style="margin-bottom: 20px;">
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="stat-value">1</div>
+        <div class="stat-label">Device Online</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </div>
+        <div class="stat-value">1</div>
+        <div class="stat-label">Device Down</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        </div>
+        <div class="stat-value" id="pending-count">—</div>
+        <div class="stat-label">Scheduler Pending</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon cyan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <div class="stat-value">{{ total_users }} Akun</div>
+        <div class="stat-label">Total User Terdaftar</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <div class="stat-value">24 Unit</div>
+        <div class="stat-label">Total Server Aktif</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="stat-value" style="color: var(--success); font-size: 18px;">Active / Valid</div>
+        <div class="stat-label">Status Lisensi PRTG</div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+        <div>
+            <p class="card-title">Kelola &amp; Cek Status Sensor Jaringan</p>
+            <p class="card-desc">Data ditarik langsung dari server PRTG, diperbarui otomatis setiap 15 detik</p>
+        </div>
+        <a href="{{ url_for('admin.kelola_pengguna') }}" class="btn btn-secondary btn-sm">Kelola Pengguna →</a>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Device Name</th>
+                    <th>IP Address</th>
+                    <th>Status</th>
+                    <th>Uptime</th>
+                </tr>
+            </thead>
+            <tbody id="device-table-body">
+                <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Memuat data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <p class="card-title">Grafik Performa Sensor (Real-Time)</p>
+            <p class="card-desc">Graph ID: {{ config.PRTG_DEFAULT_GRAPH_ID if config else '2082' }}</p>
+        </div>
+    </div>
+    <div class="chart-frame">
+        <img id="prtg-admin-chart" src="{{ url_for('shared.api_prtg_chart') }}" alt="Grafik PRTG Admin">
+    </div>
+    <div class="legend-row">
+        <span style="color: var(--text-faint); font-weight:600; margin-right:2px;">Keterangan:</span>
+        <div class="legend-item"><span class="legend-swatch" style="background:#F43F5E;"></span> Downtime (%)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#38BDF8;"></span> Response Time (msec)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#34D399;"></span> Min Response (msec)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#FBBF24;"></span> Max Response (msec)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#8B93A7;"></span> Packet Loss (%)</div>
+    </div>
+</div>
+
+<script>
+    function loadDevices() {
+        fetch("{{ url_for('shared.api_prtg_devices') }}")
+            .then(r => r.json())
+            .then(data => {
+                const tbody = document.getElementById('device-table-body');
+                tbody.innerHTML = '';
+                const devices = (data && data.devices) || [];
+                if (devices.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Tidak ada perangkat.</td></tr>';
+                    return;
+                }
+                devices.forEach(d => {
+                    const isUp = (d.status || '').toLowerCase().includes('up');
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${d.device || '-'}</td>
+                        <td class="ip-cell">${d.host || '-'}</td>
+                        <td><span class="badge ${isUp ? 'up' : 'down'}">${isUp ? 'UP' : 'DOWN'}</span></td>
+                        <td>${d.uptime || '-'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(() => {
+                document.getElementById('device-table-body').innerHTML =
+                    '<tr><td colspan="4" style="text-align:center; color: var(--danger);">Gagal memuat data device.</td></tr>';
+            });
+    }
+    loadDevices();
+
+    setInterval(() => {
+        const img = document.getElementById('prtg-admin-chart');
+        if (img) img.src = "{{ url_for('shared.api_prtg_chart') }}?t=" + new Date().getTime();
+        loadDevices();
+    }, 15000);
+</script>
+{% endblock %}

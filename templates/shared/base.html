@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %} — Valeria</title>
+    <!-- Bootstrap CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom Style Utama Valeria -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-mark">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="1.6" fill="white" stroke="none"/>
+                        <path d="M8.5 15.5a5 5 0 0 1 7 0"/>
+                        <path d="M5.5 12.5a9 9 0 0 1 13 0"/>
+                        <path d="M2.5 9.5a13 13 0 0 1 19 0"/>
+                    </svg>
+                </div>
+                <div>
+                    <span class="brand-name">VALERIA</span>
+                    <span class="brand-sub">by Infomedia</span>
+                </div>
+            </div>
+
+            <span class="sidebar-scope">
+                {% if session.role == 'superadmin' %}Super Admin Access{% elif session.role == 'admin' %}Admin Access{% else %}Client View{% endif %}
+            </span>
+
+            <nav class="sidebar-nav">
+                {% if session.role in ['admin', 'superadmin'] %}
+                <div class="nav-group">
+                    <p class="nav-label">Monitoring</p>
+                    <a href="{{ url_for('admin.dashboard_admin') }}" class="nav-link {{ 'active' if active_page == 'dashboard_admin' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+                        Dashboard Admin
+                    </a>
+                    
+                    <!-- Analytics Dashboard -->
+                    <a href="{{ url_for('admin.admin_analytics') }}" class="nav-link {{ 'active' if active_page == 'analytics' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                        Analytics Dashboard
+                    </a>
+
+                    <!-- Menu Baru di bawah Analytics / Summary -->
+                    <a href="{{ url_for('admin.summary_page', tahun=2026) }}" class="nav-link {{ 'active' if active_page.startswith('summary_') }}" style="padding-left: 32px; font-size: 13px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                        Summary Tahunan
+                    </a>
+                    <a href="{{ url_for('admin.report_dis_dow') }}" class="nav-link {{ 'active' if active_page == 'report_dis_dow' }}" style="padding-left: 32px; font-size: 13px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                        Dismentle & Downgrade
+                    </a>
+                    <a href="{{ url_for('admin.report_case_1500') }}" class="nav-link {{ 'active' if active_page == 'report_case_1500' }}" style="padding-left: 32px; font-size: 13px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                        Case 1500 & Connect
+                    </a>
+
+                    <a href="{{ url_for('admin.list_orders') }}" class="nav-link {{ 'active' if active_page == 'orders' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                        Daftar Orders
+                    </a>
+                    <a href="{{ url_for('admin.list_projects') }}" class="nav-link {{ 'active' if active_page == 'projects' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        Daftar Projects
+                    </a>
+                    <a href="{{ url_for('shared.ip_management') }}" class="nav-link {{ 'active' if active_page == 'ip_management' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>
+                        IP Management
+                    </a>
+                    <a href="{{ url_for('shared.scheduler_page') }}" class="nav-link {{ 'active' if active_page == 'scheduler' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 2v4M16 2v4"/></svg>
+                        Scheduler
+                    </a>
+                </div>
+                <div class="nav-group">
+                    <p class="nav-label">Administration</p>
+                    <a href="{{ url_for('admin.kelola_pengguna') }}" class="nav-link {{ 'active' if active_page == 'kelola_pengguna' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        Kelola Pengguna
+                    </a>
+                    <a href="{{ url_for('admin.audit_logs') }}" class="nav-link {{ 'active' if active_page == 'audit_logs' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg>
+                        Audit Logs
+                    </a>
+                </div>
+                {% else %}
+                <div class="nav-group">
+                    <p class="nav-label">Menu</p>
+                    <a href="{{ url_for('klien.dashboard_klien') }}" class="nav-link {{ 'active' if active_page == 'dashboard_klien' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+                        Dashboard
+                    </a>
+                    <a href="{{ url_for('shared.ip_management') }}" class="nav-link {{ 'active' if active_page == 'ip_management' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>
+                        IP Management
+                    </a>
+                    <a href="{{ url_for('shared.scheduler_page') }}" class="nav-link {{ 'active' if active_page == 'scheduler' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 2v4M16 2v4"/></svg>
+                        Scheduler
+                    </a>
+                </div>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="{{ url_for('auth.logout') }}" class="logout-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <div class="main-col">
+            <header class="topbar">
+                <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                <div class="topbar-right">
+                    <!-- Tombol Toggle Tema (Light / Dark) -->
+                    <button id="themeToggleBtn" onclick="toggleTheme()" class="btn btn-secondary btn-sm" title="Ganti Tema">
+                        <span id="themeText">Light Mode</span>
+                    </button>
+
+                    <div class="user-chip">
+                        <div class="avatar">{{ (session.name or 'U')[:2] | upper }}</div>
+                        <span style="font-weight:600; font-size:13px;">{{ session.name or 'User' }}</span>
+                        <span class="role-pill {{ session.role }}">{{ session.role }}</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="content">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
+                            <div class="d-flex align-items-center gap-2">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                                <span>{{ message }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Main Content Block -->
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Script Pengaturan Tema -->
+    <script>
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('valeria_theme', newTheme);
+        updateThemeUI(newTheme);
+    }
+
+    function updateThemeUI(theme) {
+        const text = document.getElementById('themeText');
+        if (text) {
+            text.innerText = theme === 'light' ? 'Dark Mode' : 'Light Mode';
+        }
+    }
+
+    // Load tema tersimpan saat halaman dimuat
+    (function() {
+        const savedTheme = localStorage.getItem('valeria_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeUI(savedTheme);
+    })();
+    </script>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

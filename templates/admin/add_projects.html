@@ -1,0 +1,90 @@
+{% extends "shared/base.html" %}
+{% block content %}
+<div style="max-width: 800px; margin: 30px auto; padding: 0 20px; color: #c9d1d9; font-family: inherit;">
+    <!-- Header Form -->
+    <div style="display: flex; align-items: center; margin-bottom: 24px;">
+        <a href="{{ url_for('admin.list_projects') }}" style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid #30363d; color: #8b949e; text-decoration: none; margin-right: 16px; background: #161b22; transition: 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='#8b949e'" onmouseout="this.style.color='#8b949e'; this.style.borderColor='#30363d'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </a>
+        <h2 style="font-size: 22px; font-weight: bold; color: #ffffff; margin: 0; display: flex; align-items: center; gap: 10px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#ff3366" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg> Tambah Project Baru
+        </h2>
+    </div>
+
+    <!-- Card Wrapper Form -->
+    <div style="background-color: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 30px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+        <form method="POST">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                
+                <!-- ID Project -->
+                <div>
+                    <label style="display: block; font-weight: 600; font-size: 13px; color: #8b949e; margin-bottom: 8px;">ID Project</label>
+                    <input type="text" name="id_project" required placeholder="Contoh: P240101-01-00" style="width: 100%; background-color: #0d1117; border: 1px solid #30363d; color: #ffffff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='#ff3366'" onblur="this.style.borderColor='#30363d'">
+                </div>
+
+                <!-- Tahun -->
+                <div>
+                    <label style="display: block; font-weight: 600; font-size: 13px; color: #8b949e; margin-bottom: 8px;">Tahun</label>
+                    <input type="number" name="tahun" required value="2026" style="width: 100%; background-color: #0d1117; border: 1px solid #30363d; color: #ffffff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='#ff3366'" onblur="this.style.borderColor='#30363d'">
+                </div>
+
+                <!-- Periode -->
+                <div>
+                    <label style="display: block; font-weight: 600; font-size: 13px; color: #8b949e; margin-bottom: 8px;">Periode</label>
+                    <input type="text" name="periode" required placeholder="Contoh: Januari" style="width: 100%; background-color: #0d1117; border: 1px solid #30363d; color: #ffffff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='#ff3366'" onblur="this.style.borderColor='#30363d'">
+                </div>
+
+                <!-- Jenis Project -->
+                <div>
+                    <label style="display: block; font-weight: 600; font-size: 13px; color: #8b949e; margin-bottom: 8px;">Jenis Project</label>
+                    <input type="text" name="jenis_project" required placeholder="Contoh: CRM" style="width: 100%; background-color: #0d1117; border: 1px solid #30363d; color: #ffffff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='#ff3366'" onblur="this.style.borderColor='#30363d'">
+                </div>
+
+                <!-- Nama Project -->
+                <div style="grid-column: span 2;">
+                    <label style="display: block; font-weight: 600; font-size: 13px; color: #8b949e; margin-bottom: 8px;">Nama Project</label>
+                    <textarea name="nama_project" rows="3" required placeholder="Nama lengkap project..." style="width: 100%; background-color: #0d1117; border: 1px solid #30363d; color: #ffffff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; resize: vertical; box-sizing: border-box;" onfocus="this.style.borderColor='#ff3366'" onblur="this.style.borderColor='#30363d'"></textarea>
+                </div>
+
+                <!-- PMG -->
+                <div>
+                    <label style="display: block; font-weight: 600; font-size: 13px; color: #8b949e; margin-bottom: 8px;">PMG</label>
+                    <input type="text" name="pmg" placeholder="Nama PMG..." style="width: 100%; background-color: #0d1117; border: 1px solid #30363d; color: #ffffff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='#ff3366'" onblur="this.style.borderColor='#30363d'">
+                </div>
+
+                <!-- PM -->
+                <div>
+                    <label style="display: block; font-weight: 600; font-size: 13px; color: #8b949e; margin-bottom: 8px;">PM</label>
+                    <input type="text" name="pm" placeholder="Nama PM..." style="width: 100%; background-color: #0d1117; border: 1px solid #30363d; color: #ffffff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='#ff3366'" onblur="this.style.borderColor='#30363d'">
+                </div>
+
+                <!-- Revenue Akhir -->
+                <div style="grid-column: span 2;">
+                    <label style="display: block; font-weight: 600; font-size: 13px; color: #8b949e; margin-bottom: 8px;">Revenue Akhir (Angka)</label>
+                    <input type="number" name="revenue_akhir" required placeholder="Contoh: 150000000" style="width: 100%; background-color: #0d1117; border: 1px solid #30363d; color: #ffffff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='#ff3366'" onblur="this.style.borderColor='#30363d'">
+                </div>
+
+                <!-- Segment Sales -->
+                <div>
+                    <label style="display: block; font-weight: 600; font-size: 13px; color: #8b949e; margin-bottom: 8px;">Segment Sales</label>
+                    <input type="text" name="segment_sales" placeholder="Contoh: Private / Telkom Group" style="width: 100%; background-color: #0d1117; border: 1px solid #30363d; color: #ffffff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='#ff3366'" onblur="this.style.borderColor='#30363d'">
+                </div>
+
+                <!-- Klasifikasi Project -->
+                <div>
+                    <label style="display: block; font-weight: 600; font-size: 13px; color: #8b949e; margin-bottom: 8px;">Klasifikasi Project</label>
+                    <input type="text" name="klasifikasi_project" placeholder="Contoh: A / B / C" style="width: 100%; background-color: #0d1117; border: 1px solid #30363d; color: #ffffff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='#ff3366'" onblur="this.style.borderColor='#30363d'">
+                </div>
+
+                <!-- Tombol Aksi di Kanan -->
+                <div style="grid-column: span 2; display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 10px;">
+                    <a href="{{ url_for('admin.list_projects') }}" style="background-color: transparent; color: #c9d1d9; border: 1px solid #30363d; padding: 10px 24px; border-radius: 20px; text-decoration: none; font-size: 14px; font-weight: 600; transition: 0.2s;" onmouseover="this.style.background='#30363d'" onmouseout="this.style.background='transparent'">Batal</a>
+                    
+                    <button type="submit" style="background-color: #ff3366; color: white; border: none; padding: 10px 30px; border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 51, 102, 0.3); transition: 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Simpan Project</button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

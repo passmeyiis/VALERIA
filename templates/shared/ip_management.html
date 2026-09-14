@@ -1,0 +1,334 @@
+{% extends 'shared/base.html' %}
+{% block title %}IP Management{% endblock %}
+{% block page_title %}IP Management{% endblock %}
+
+{% block content %}
+
+{% if ip_summary %}
+<div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+        <div>
+            <p class="card-title">Ringkasan Ketersediaan IP</p>
+            <p class="card-desc">Total Keseluruhan Data IP dalam Sistem ({{ ip_summary.total }} entri)</p>
+        </div>
+        {% if session.role in ['admin', 'superadmin'] %}
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('modal-tambah-ip').classList.add('open')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Tambah Data IP
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-2">
+        <div>
+            <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">Status Segmen IP</p>
+            <div class="donut-wrap">
+                <div class="donut" style="background: conic-gradient(var(--success) 0% {{ ip_summary.seg1_end }}%, var(--danger) {{ ip_summary.seg1_end }}% {{ ip_summary.seg2_end }}%, var(--text-faint) {{ ip_summary.seg2_end }}% 100%);">
+                    <div class="donut-center">
+                        <span class="donut-total">{{ ip_summary.total }}</span>
+                        <span class="donut-caption">total</span>
+                    </div>
+                </div>
+                <div class="donut-legend">
+                    <div class="donut-legend-item">
+                        <span class="swatch" style="background: var(--success);"></span>
+                        <span class="lbl">Tersedia</span>
+                        <span class="val">{{ ip_summary.tersedia }} ({{ ip_summary.tersedia_pct }}%)</span>
+                    </div>
+                    <div class="donut-legend-item">
+                        <span class="swatch" style="background: var(--danger);"></span>
+                        <span class="lbl">Digunakan</span>
+                        <span class="val">{{ ip_summary.digunakan }} ({{ ip_summary.digunakan_pct }}%)</span>
+                    </div>
+                    <div class="donut-legend-item">
+                        <span class="swatch" style="background: var(--text-faint);"></span>
+                        <span class="lbl">Belum diisi</span>
+                        <span class="val">{{ ip_summary.belum_diisi }} ({{ ip_summary.belum_diisi_pct }}%)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div>
+            <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">Lokasi dengan Segmen IP Terbanyak</p>
+            {% for l in ip_summary.top_lokasi %}
+            <div class="hbar-row">
+                <div class="hbar-label">
+                    <span class="name">{{ l.lokasi }}</span>
+                    <span class="count">{{ l.count }}</span>
+                </div>
+                <div class="hbar-track"><div class="hbar-fill" style="width: {{ l.bar_pct }}%;"></div></div>
+            </div>
+            {% else %}
+            <p style="font-size:13px; color:var(--text-faint);">Belum ada data lokasi.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+        <div>
+            <p class="card-title">Daftar Seluruh Data IP</p>
+            <p class="card-desc">Kelola, cari, dan edit data IP langsung dari sistem database</p>
+        </div>
+        <!-- KOTAK SEARCH -->
+        <div>
+            <input type="text" id="searchIpInput" placeholder="Cari IP, layanan, lokasi..." onkeyup="filterIpTable()" style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text);">
+        </div>
+    </div>
+    
+    <div class="table-wrap">
+        <table id="ipTableEntries">
+            <thead>
+                <tr>
+                    <th>Segmen IP</th>
+                    <th>Subnet</th>
+                    <th>Layanan</th>
+                    <th>Lokasi</th>
+                    <th>Status</th>
+                    <th>PIC Request</th>
+                    <th>Tgl Request</th>
+                    <th>VLAN</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in ip_entries %}
+                <tr>
+                    <td class="ip-cell">{{ e.segmen_ip }}</td>
+                    <td>{{ e.subnet_mask or '-' }}</td>
+                    <td>{{ e.layanan or '-' }}</td>
+                    <td>{{ e.lokasi or '-' }}</td>
+                    <td>
+                        {% if e.status == 1 %}<span class="badge down">Digunakan</span>
+                        {% else %}<span class="badge up">Tersedia</span>{% endif %}
+                    </td>
+                    <td>{{ e.pic_req or '-' }}</td>
+                    <td>{{ e.tgl_req.strftime('%d %b %Y') if e.tgl_req else '-' }}</td>
+                    <td>{{ e.vlan_id or '-' }}</td>
+                    <td>
+                        {% if session.role in ['admin', 'superadmin'] %}
+                        <button class="btn btn-secondary btn-sm" onclick='openEditModal({
+                            id: {{ e.id }},
+                            segmen_ip: {{ e.segmen_ip | tojson }},
+                            subnet_mask: {{ (e.subnet_mask or "") | tojson }},
+                            layanan: {{ (e.layanan or "") | tojson }},
+                            lokasi: {{ (e.lokasi or "") | tojson }},
+                            status: {{ e.status | tojson }},
+                            desc: {{ (e.desc or "") | tojson }},
+                            pic_req: {{ (e.pic_req or "") | tojson }},
+                            vlan_id: {{ (e.vlan_id or "") | tojson }},
+                            tgl_req: {{ e.tgl_req.strftime("%Y-%m-%d") | tojson if e.tgl_req else '""' }},
+                            tgl_aprv: {{ e.tgl_aprv.strftime("%Y-%m-%d") | tojson if e.tgl_aprv else '""' }},
+                            tgl_release: {{ e.tgl_release.strftime("%Y-%m-%d") | tojson if e.tgl_release else '""' }}
+                        })'>Edit</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; color: var(--text-faint); padding: 20px;">Belum ada data IP di dalam database.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if ip_error %}
+<div class="card" style="border-color: var(--danger);">
+    <p class="mono" style="color: var(--danger); font-size: 12px;">{{ ip_error }}</p>
+</div>
+{% endif %}
+
+<!-- Modal Tambah Data IP -->
+<div id="modal-tambah-ip" class="modal-overlay">
+    <div class="modal-box" style="max-width: 560px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="modal-header" style="flex-shrink: 0; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 15px;">
+            <h3>Tambah Data IP</h3>
+            <button class="modal-close" onclick="document.getElementById('modal-tambah-ip').classList.remove('open')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form action="{{ url_for('shared.tambah_ip_address') }}" method="POST" style="overflow-y: auto; flex-grow: 1; padding-right: 4px;">
+            <div class="field-row">
+                <div class="field">
+                    <label>Segmen IP *</label>
+                    <input type="text" name="segmen_ip" placeholder="10.194.0.0" required>
+                </div>
+                <div class="field">
+                    <label>Subnet Mask</label>
+                    <input type="text" name="subnet_mask" placeholder="/24">
+                </div>
+            </div>
+            <div class="field">
+                <label>Layanan</label>
+                <input type="text" name="layanan" placeholder="Nama layanan/proyek">
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Lokasi</label>
+                    <input type="text" name="lokasi" placeholder="Contoh: FATMAWATI">
+                </div>
+                <div class="field">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="0">Tersedia</option>
+                        <option value="1">Digunakan</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field">
+                <label>Deskripsi</label>
+                <input type="text" name="desc" placeholder="Catatan tambahan (opsional)">
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>PIC Request</label>
+                    <input type="text" name="pic_req" placeholder="Nama PIC">
+                </div>
+                <div class="field">
+                    <label>VLAN ID</label>
+                    <input type="text" name="vlan_id" placeholder="Opsional">
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Tgl Request</label>
+                    <input type="date" name="tgl_req">
+                </div>
+                <div class="field">
+                    <label>Tgl Approve</label>
+                    <input type="date" name="tgl_aprv">
+                </div>
+            </div>
+            <div class="field">
+                <label>Tgl Release</label>
+                <input type="date" name="tgl_release">
+            </div>
+            <div class="modal-actions" style="margin-top: 20px; padding-bottom: 10px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-tambah-ip').classList.remove('open')">Batal</button>
+                <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Edit Data IP -->
+<div id="modal-edit-ip" class="modal-overlay">
+    <div class="modal-box" style="max-width: 560px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="modal-header" style="flex-shrink: 0; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 15px;">
+            <h3>Edit Data IP</h3>
+            <button class="modal-close" onclick="document.getElementById('modal-edit-ip').classList.remove('open')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form id="formEditIp" method="POST" style="overflow-y: auto; flex-grow: 1; padding-right: 4px;">
+            <input type="hidden" name="id" id="edit_id">
+            <div class="field-row">
+                <div class="field">
+                    <label>Segmen IP *</label>
+                    <input type="text" name="segmen_ip" id="edit_segmen_ip" required>
+                </div>
+                <div class="field">
+                    <label>Subnet Mask</label>
+                    <input type="text" name="subnet_mask" id="edit_subnet_mask">
+                </div>
+            </div>
+            <div class="field">
+                <label>Layanan</label>
+                <input type="text" name="layanan" id="edit_layanan">
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Lokasi</label>
+                    <input type="text" name="lokasi" id="edit_lokasi">
+                </div>
+                <div class="field">
+                    <label>Status</label>
+                    <select name="status" id="edit_status">
+                        <option value="0">Tersedia</option>
+                        <option value="1">Digunakan</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field">
+                <label>Deskripsi</label>
+                <input type="text" name="desc" id="edit_desc">
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>PIC Request</label>
+                    <input type="text" name="pic_req" id="edit_pic_req">
+                </div>
+                <div class="field">
+                    <label>VLAN ID</label>
+                    <input type="text" name="vlan_id" id="edit_vlan_id">
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Tgl Request</label>
+                    <input type="date" name="tgl_req" id="edit_tgl_req">
+                </div>
+                <div class="field">
+                    <label>Tgl Approve</label>
+                    <input type="date" name="tgl_aprv" id="edit_tgl_aprv">
+                </div>
+            </div>
+            <div class="field">
+                <label>Tgl Release</label>
+                <input type="date" name="tgl_release" id="edit_tgl_release">
+            </div>
+            <div class="modal-actions" style="margin-top: 20px; padding-bottom: 10px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-edit-ip').classList.remove('open')">Batal</button>
+                <button type="submit" class="btn btn-primary btn-sm">Update</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- SCRIPT JAVASCRIPT UNTUK SEARCH & EDIT -->
+<script>
+function filterIpTable() {
+    let input = document.getElementById("searchIpInput");
+    let filter = input.value.toLowerCase();
+    let table = document.getElementById("ipTableEntries");
+    let tr = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < tr.length; i++) {
+        let td = tr[i].getElementsByTagName("td");
+        let found = false;
+        for (let j = 0; j < td.length - 1; j++) {
+            if (td[j]) {
+                if (td[j].innerHTML.toLowerCase().indexOf(filter) > -1) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        tr[i].style.display = found ? "" : "none";
+    }
+}
+
+function openEditModal(data) {
+    document.getElementById('edit_id').value = data.id;
+    document.getElementById('edit_segmen_ip').value = data.segmen_ip || '';
+    document.getElementById('edit_subnet_mask').value = data.subnet_mask || '';
+    document.getElementById('edit_layanan').value = (data.layanan && data.layanan.toLowerCase() !== 'nan') ? data.layanan : '';
+    document.getElementById('edit_lokasi').value = (data.lokasi && data.lokasi.toLowerCase() !== 'nan') ? data.lokasi : '';
+    document.getElementById('edit_status').value = data.status ?? 0;
+    document.getElementById('edit_desc').value = data.desc || '';
+    document.getElementById('edit_pic_req').value = data.pic_req || '';
+    document.getElementById('edit_vlan_id').value = data.vlan_id || '';
+    document.getElementById('edit_tgl_req').value = data.tgl_req ? data.tgl_req.substring(0, 10) : '';
+    document.getElementById('edit_tgl_aprv').value = data.tgl_aprv ? data.tgl_aprv.substring(0, 10) : '';
+    document.getElementById('edit_tgl_release').value = data.tgl_release ? data.tgl_release.substring(0, 10) : '';
+    
+    document.getElementById('formEditIp').action = "/ip-management/edit/" + data.id;
+    document.getElementById('modal-edit-ip').classList.add('open');
+}
+</script>
+
+{% endblock %}
