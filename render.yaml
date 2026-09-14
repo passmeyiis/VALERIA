@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: valeria-dashboard
+    env: python
+    buildCommand: "pip install --no-cache-dir -r requirements.txt"
+    startCommand: "gunicorn app:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+
+        
