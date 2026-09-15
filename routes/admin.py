@@ -301,6 +301,16 @@ def summary_page(tahun):
                     except:
                         monthly_revenues[i] = 0
 
+            # --- DEBUG SEMENTARA: hapus lagi kalau udah ketemu masalahnya ---
+            print('=' * 56)
+            print('  [CHART DEBUG] Sheet dibaca        :', sheet_name)
+            print('  [CHART DEBUG] Jumlah baris di df   :', len(df))
+            print('  [CHART DEBUG] target_row ketemu?   :', target_row is not None)
+            print('  [CHART DEBUG] monthly_revenues     :', monthly_revenues)
+            print('  [CHART DEBUG] Isi kolom pertama    :', df.iloc[:, 0].dropna().astype(str).tolist()[:15])
+            print('=' * 56)
+            # --- akhir debug ---
+
             if len(df) > 1:
                 total_project_val = df.iloc[1, 3] if not pd.isna(df.iloc[1, 3]) else 0
             if len(df) > 3:
