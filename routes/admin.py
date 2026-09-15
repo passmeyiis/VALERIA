@@ -308,6 +308,8 @@ def summary_page(tahun):
             print('  [CHART DEBUG] target_row ketemu?   :', target_row is not None)
             print('  [CHART DEBUG] monthly_revenues     :', monthly_revenues)
             print('  [CHART DEBUG] Isi kolom pertama    :', df.iloc[:, 0].dropna().astype(str).tolist()[:15])
+            if target_row is not None:
+                print('  [CHART DEBUG] Isi target_row utuh  :', target_row.tolist())
             print('=' * 56)
             # --- akhir debug ---
 
