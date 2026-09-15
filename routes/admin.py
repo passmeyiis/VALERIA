@@ -263,15 +263,6 @@ def summary_page(tahun):
     excel_path = 'report ITND fix(3).xlsx'
     sheet_name = f'Sum {tahun}'
 
-    # --- DEBUG SEMENTARA: hapus lagi kalau udah ketemu masalahnya ---
-    print('=' * 56)
-    print('  [SUMMARY DEBUG] Working dir  :', os.getcwd())
-    print('  [SUMMARY DEBUG] excel_path   :', repr(excel_path))
-    print('  [SUMMARY DEBUG] exists()?    :', os.path.exists(excel_path))
-    print('  [SUMMARY DEBUG] File di cwd  :', [f for f in os.listdir('.') if f.lower().endswith('.xlsx')])
-    print('=' * 56)
-    # --- akhir debug ---
-    
     summary_data = []
     monthly_labels = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
     monthly_revenues = [0] * 12
@@ -287,31 +278,25 @@ def summary_page(tahun):
             summary_data = df.fillna('').astype(str).values.tolist()
             
             target_row = None
+            label_col_idx = None
             for idx, row in df.iterrows():
-                vals = row.dropna().values
-                if len(vals) > 0 and 'Revenue Project' in str(vals[0]):
-                    target_row = row
+                for col_idx, cell in enumerate(row):
+                    if isinstance(cell, str) and 'Revenue Project' in cell:
+                        target_row = row
+                        label_col_idx = col_idx
+                        break
+                if target_row is not None:
                     break
-            
-            if target_row is not None:
+
+            if target_row is not None and label_col_idx is not None:
                 for i in range(12):
-                    val = target_row.iloc[i+1] if i+1 < len(target_row) else 0
+                    col = label_col_idx + 1 + i
+                    val = target_row.iloc[col] if col < len(target_row) else None
                     try:
-                        monthly_revenues[i] = float(val) if val else 0
-                    except:
+                        monthly_revenues[i] = float(val) if pd.notna(val) else 0
+                    except (TypeError, ValueError):
                         monthly_revenues[i] = 0
 
-            # --- DEBUG SEMENTARA: hapus lagi kalau udah ketemu masalahnya ---
-            print('=' * 56)
-            print('  [CHART DEBUG] Sheet dibaca        :', sheet_name)
-            print('  [CHART DEBUG] Jumlah baris di df   :', len(df))
-            print('  [CHART DEBUG] target_row ketemu?   :', target_row is not None)
-            print('  [CHART DEBUG] monthly_revenues     :', monthly_revenues)
-            print('  [CHART DEBUG] Isi kolom pertama    :', df.iloc[:, 0].dropna().astype(str).tolist()[:15])
-            if target_row is not None:
-                print('  [CHART DEBUG] Isi target_row utuh  :', target_row.tolist())
-            print('=' * 56)
-            # --- akhir debug ---
 
             if len(df) > 1:
                 total_project_val = df.iloc[1, 3] if not pd.isna(df.iloc[1, 3]) else 0
