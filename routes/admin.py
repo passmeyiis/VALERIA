@@ -262,6 +262,15 @@ def admin_analytics():
 def summary_page(tahun):
     excel_path = 'report ITND fix(3).xlsx'
     sheet_name = f'Sum {tahun}'
+
+    # --- DEBUG SEMENTARA: hapus lagi kalau udah ketemu masalahnya ---
+    print('=' * 56)
+    print('  [SUMMARY DEBUG] Working dir  :', os.getcwd())
+    print('  [SUMMARY DEBUG] excel_path   :', repr(excel_path))
+    print('  [SUMMARY DEBUG] exists()?    :', os.path.exists(excel_path))
+    print('  [SUMMARY DEBUG] File di cwd  :', [f for f in os.listdir('.') if f.lower().endswith('.xlsx')])
+    print('=' * 56)
+    # --- akhir debug ---
     
     summary_data = []
     monthly_labels = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
