@@ -1,14 +1,14 @@
-from flask import Flask
-
-from config import Config
-from extensions import db
-
 try:
     from dotenv import load_dotenv
 
     load_dotenv()
 except ImportError:
     pass
+
+from flask import Flask
+
+from config import Config
+from extensions import db
 
 
 def seed_default_users(app: Flask) -> None:
@@ -59,6 +59,16 @@ def create_app() -> Flask:
 
     with app.app_context():
         db.create_all()
+
+        # --- DEBUG SEMENTARA: hapus lagi kalau udah ketemu masalahnya ---
+        import os
+        from sqlalchemy import inspect
+        print('=' * 56)
+        print('  DB URI dipakai :', app.config['SQLALCHEMY_DATABASE_URI'])
+        print('  Working dir    :', os.getcwd())
+        print('  Tabel yang ada :', inspect(db.engine).get_table_names())
+        print('=' * 56)
+        # --- akhir debug ---
 
         from db_maintenance import auto_migrate_columns
         auto_migrate_columns(app)
