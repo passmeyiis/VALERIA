@@ -370,47 +370,11 @@ def report_case_1500():
 @admin_bp.route('/admin/orders')
 @admin_required
 def list_orders():
-    excel_path = 'report ITND fix(3).xlsx'
-    
-    if os.path.exists(excel_path):
-        wb = openpyxl.load_workbook(excel_path, data_only=True)
-        sheet = wb['List Order']
-        
-        headers = [cell.value for cell in sheet[1]]
-        orders_data = []
-        
-        for row_idx in range(2, sheet.max_row + 1):
-            row_dict = {'id': row_idx - 2} 
-            has_data = False
-            for col_idx, header in enumerate(headers, 1):
-                if not header:
-                    continue
-                cell = sheet.cell(row=row_idx, column=col_idx)
-                val = cell.value
-                
-                if str(header).strip().lower() == 'file ba':
-                    if cell.hyperlink and cell.hyperlink.target:
-                        val = cell.hyperlink.target
-                    elif not val:
-                        val = '-'
-                
-                if val is not None:
-                    has_data = True
-                    if isinstance(val, datetime):
-                        val = val.strftime('%Y-%m-%d')
-                    elif isinstance(val, float) and val.is_integer():
-                        val = str(int(val))
-                    else:
-                        val = str(val)
-                else:
-                    val = '-'
-                
-                row_dict[str(header).strip()] = val
-            
-            if has_data:
-                orders_data.append(row_dict)
-    else:
-        orders_data = []
+    from extensions import db
+    from sqlalchemy import text
+
+    rows = db.session.execute(text('SELECT * FROM orders ORDER BY id DESC')).mappings().fetchall()
+    orders_data = [dict(r) for r in rows]
 
     return render_template('admin/list_orders.html', active_page='orders', orders=orders_data)
 
@@ -418,40 +382,34 @@ def list_orders():
 @admin_bp.route('/admin/orders/add', methods=['GET', 'POST'])
 @admin_required
 def add_order():
-    excel_path = 'report ITND fix(3).xlsx'
+    from extensions import db
+    from sqlalchemy import text
+
     if request.method == 'POST':
         try:
             id_order = request.form.get('id_order')
             client = request.form.get('client')
             keterangan = request.form.get('keterangan') or '-'
-            nilai = request.form.get('nilai') or 0
+            nilai = float(request.form.get('nilai') or 0)
             file_ba = request.form.get('file_ba') or '-'
 
-            if os.path.exists(excel_path):
-                df = pd.read_excel(excel_path, sheet_name='List Order')
-                cols = list(df.columns)
-                new_row = {col: '-' for col in cols}
-                for col in cols:
-                    cl = col.lower()
-                    if 'order' in cl or 'no order' in cl:
-                        new_row[col] = id_order
-                    elif 'client' in cl or 'provider' in cl:
-                        new_row[col] = client
-                    elif 'keterangan' in cl:
-                        new_row[col] = keterangan
-                    elif 'harga' in cl or 'nilai' in cl:
-                        new_row[col] = nilai
-                    elif 'file' in cl or 'ba' in cl:
-                        new_row[col] = file_ba
-
-                df_new = pd.DataFrame([new_row])
-                df_combined = pd.concat([df, df_new], ignore_index=True)
-                with pd.ExcelWriter(excel_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-                    df_combined.to_excel(writer, sheet_name='List Order', index=False)
+            db.session.execute(text('''
+                INSERT INTO orders (no_order, provider, keterangan, harga, file_ba, status)
+                VALUES (:no_order, :provider, :keterangan, :harga, :file_ba, :status)
+            '''), {
+                'no_order': id_order,
+                'provider': client,
+                'keterangan': keterangan,
+                'harga': nilai,
+                'file_ba': file_ba,
+                'status': 'Pending',
+            })
+            db.session.commit()
 
             flash('Order baru berhasil ditambahkan!', 'success')
             return redirect(url_for('admin.list_orders'))
         except Exception as e:
+            db.session.rollback()
             flash(f'Gagal menambah order: {str(e)}', 'danger')
 
     return render_template('admin/add_orders.html', active_page='orders')
@@ -460,42 +418,63 @@ def add_order():
 @admin_bp.route('/admin/orders/edit/<int:id>', methods=['GET', 'POST'])
 @admin_required
 def edit_order(id):
-    excel_path = 'report ITND fix(3).xlsx'
-    if not os.path.exists(excel_path):
-        flash('File data Excel tidak ditemukan.', 'danger')
-        return redirect(url_for('admin.list_orders'))
+    from extensions import db
+    from sqlalchemy import text
 
-    wb = openpyxl.load_workbook(excel_path, data_only=True)
-    sheet = wb['List Order']
-    headers = [cell.value for cell in sheet[1]]
-    
-    excel_row_idx = id + 2 
+    ALLOWED_COLUMNS = {
+        'no_order_seq', 'periode', 'tahun', 'tanggal', 'order_type', 'dasar_order',
+        'no_surat_modin', 'jenis_order', 'klasifikasi_order', 'provider', 'akhir_kontrak',
+        'sisa_kontrak', 'no_order', 'sid_1', 'sid_2', 'ip_address', 'keterangan', 'status',
+        'task', 'harga', 'no_ba', 'tgl_ba', 'file_ba',
+    }
+    INT_COLUMNS = {'no_order_seq', 'tahun'}
+    NUMERIC_COLUMNS = {'harga'}
+    DATE_COLUMNS = {'tanggal', 'akhir_kontrak', 'tgl_ba'}
 
     if request.method == 'POST':
         try:
-            for col_idx, header in enumerate(headers, 1):
-                if not header:
+            set_clauses = []
+            params = {'id': id}
+            for field_name, form_val in request.form.items():
+                if field_name not in ALLOWED_COLUMNS:
                     continue
-                header_key = str(header).strip()
-                for field_name, form_val in request.form.items():
-                    if field_name.lower() == header_key.lower():
-                        sheet.cell(row=excel_row_idx, column=col_idx, value=form_val)
-            
-            wb.save(excel_path)
+
+                value = form_val.strip() if form_val else None
+                if value == '':
+                    value = None
+                elif field_name in INT_COLUMNS:
+                    try:
+                        value = int(value)
+                    except (TypeError, ValueError):
+                        value = None
+                elif field_name in NUMERIC_COLUMNS:
+                    try:
+                        value = float(value)
+                    except (TypeError, ValueError):
+                        value = None
+                elif field_name in DATE_COLUMNS and value in ('-',):
+                    value = None
+
+                set_clauses.append(f'{field_name} = :{field_name}')
+                params[field_name] = value
+
+            if set_clauses:
+                query = f"UPDATE orders SET {', '.join(set_clauses)} WHERE id = :id"
+                db.session.execute(text(query), params)
+                db.session.commit()
+
             flash('Data order berhasil diperbarui!', 'success')
             return redirect(url_for('admin.list_orders'))
         except Exception as e:
+            db.session.rollback()
             flash(f'Gagal memperbarui order: {str(e)}', 'danger')
 
-    order_dict = {'id': id}
-    for col_idx, header in enumerate(headers, 1):
-        if not header:
-            continue
-        val = sheet.cell(row=excel_row_idx, column=col_idx).value
-        if isinstance(val, datetime):
-            val = val.strftime('%Y-%m-%d')
-        order_dict[str(header).strip()] = val if val is not None else ''
+    row = db.session.execute(text('SELECT * FROM orders WHERE id = :id'), {'id': id}).mappings().fetchone()
+    if not row:
+        flash('Order tidak ditemukan.', 'danger')
+        return redirect(url_for('admin.list_orders'))
 
+    order_dict = dict(row)
     return render_template('admin/edit_order.html', active_page='orders', order=order_dict)
 
 
@@ -504,37 +483,11 @@ def edit_order(id):
 @admin_bp.route('/admin/projects')
 @admin_required
 def list_projects():
-    excel_path = 'report ITND fix(3).xlsx'
-    if os.path.exists(excel_path):
-        wb = openpyxl.load_workbook(excel_path, data_only=True)
-        sheet = wb['List Project']
-        
-        headers = [cell.value for cell in sheet[1]]
-        projects_data = []
-        
-        for row_idx in range(2, sheet.max_row + 1):
-            row_dict = {'id': row_idx - 2} 
-            has_data = False
-            for col_idx, header in enumerate(headers, 1):
-                if not header:
-                    continue
-                val = sheet.cell(row=row_idx, column=col_idx).value
-                if val is not None:
-                    has_data = True
-                    if isinstance(val, datetime):
-                        val = val.strftime('%Y-%m-%d')
-                    elif isinstance(val, float) and val.is_integer():
-                        val = str(int(val))
-                    else:
-                        val = str(val)
-                else:
-                    val = '-'
-                row_dict[str(header).strip()] = val
-            
-            if has_data:
-                projects_data.append(row_dict)
-    else:
-        projects_data = []
+    from extensions import db
+    from sqlalchemy import text
+
+    rows = db.session.execute(text('SELECT * FROM projects ORDER BY id DESC')).mappings().fetchall()
+    projects_data = [dict(r) for r in rows]
 
     return render_template('admin/list_projects.html', active_page='projects', projects=projects_data)
 
@@ -542,7 +495,9 @@ def list_projects():
 @admin_bp.route('/admin/projects/add', methods=['GET', 'POST'])
 @admin_required
 def add_project():
-    excel_path = 'report ITND fix(3).xlsx'
+    from extensions import db
+    from sqlalchemy import text
+
     if request.method == 'POST':
         try:
             id_project = request.form.get('id_project')
@@ -556,43 +511,32 @@ def add_project():
             segment_sales = request.form.get('segment_sales') or '-'
             klasifikasi_project = request.form.get('klasifikasi_project') or '-'
 
-            if os.path.exists(excel_path):
-                df = pd.read_excel(excel_path, sheet_name='List Project')
-                next_no = len(df) + 1
-                
-                new_row = {
-                    ' No ': next_no,
-                    ' ID Project ': id_project,
-                    'Tahun': int(tahun) if tahun and tahun.isdigit() else tahun,
-                    'Periode': periode,
-                    ' Nama Project ': nama_project,
-                    'Jenis Project': jenis_project,
-                    ' PMG ': pmg,
-                    ' PM ': pm,
-                    ' Revenue Akhir ': revenue_akhir,
-                    ' Segment Sales ': segment_sales,
-                    ' Klasifikasi Project ': klasifikasi_project,
-                    ' Nama AM ': '-',
-                    ' Tanggal Project Charter ': '-',
-                    ' Target ': '-',
-                    'Nama PIC': '-',
-                    'Status': 'Pending',
-                    'Order': '-',
-                    'Konfigurasi': '-',
-                    'Integrasi': '-',
-                    'Tshoot': '-',
-                    'Keterangan': '-'
-                }
-
-                df_new = pd.DataFrame([new_row])
-                df_combined = pd.concat([df, df_new], ignore_index=True)
-
-                with pd.ExcelWriter(excel_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-                    df_combined.to_excel(writer, sheet_name='List Project', index=False)
+            db.session.execute(text('''
+                INSERT INTO projects
+                    (project_id, tahun, periode, nama_project, jenis_project, pmg, pm,
+                     revenue_akhir, segment_sales, klasifikasi_project, status)
+                VALUES
+                    (:project_id, :tahun, :periode, :nama_project, :jenis_project, :pmg, :pm,
+                     :revenue_akhir, :segment_sales, :klasifikasi_project, :status)
+            '''), {
+                'project_id': id_project,
+                'tahun': int(tahun) if tahun and tahun.isdigit() else None,
+                'periode': periode,
+                'nama_project': nama_project,
+                'jenis_project': jenis_project,
+                'pmg': pmg,
+                'pm': pm,
+                'revenue_akhir': revenue_akhir,
+                'segment_sales': segment_sales,
+                'klasifikasi_project': klasifikasi_project,
+                'status': 'Pending',
+            })
+            db.session.commit()
 
             flash('Project baru berhasil ditambahkan!', 'success')
             return redirect(url_for('admin.list_projects'))
         except Exception as e:
+            db.session.rollback()
             flash(f'Gagal menambah project: {str(e)}', 'danger')
 
     return render_template('admin/add_projects.html', active_page='projects')
@@ -601,40 +545,61 @@ def add_project():
 @admin_bp.route('/admin/projects/edit/<int:id>', methods=['GET', 'POST'])
 @admin_required
 def edit_project(id):
-    excel_path = 'report ITND fix(3).xlsx'
-    if not os.path.exists(excel_path):
-        flash('File data Excel tidak ditemukan.', 'danger')
-        return redirect(url_for('admin.list_projects'))
+    from extensions import db
+    from sqlalchemy import text
 
-    wb = openpyxl.load_workbook(excel_path, data_only=True)
-    sheet = wb['List Project']
-    headers = [cell.value for cell in sheet[1]]
-    
-    excel_row_idx = id + 2
+    ALLOWED_COLUMNS = {
+        'project_no', 'project_id', 'tahun', 'periode', 'nama_project', 'jenis_project',
+        'pmg', 'pm', 'revenue_akhir', 'segment_sales', 'klasifikasi_project', 'nama_am',
+        'tanggal_project_charter', 'target', 'nama_pic', 'status', 'order_type',
+        'konfigurasi', 'integrasi', 'tshoot', 'keterangan',
+    }
+    INT_COLUMNS = {'project_no', 'tahun'}
+    NUMERIC_COLUMNS = {'revenue_akhir'}
+    DATE_COLUMNS = {'tanggal_project_charter'}
 
     if request.method == 'POST':
         try:
-            for col_idx, header in enumerate(headers, 1):
-                if not header:
+            set_clauses = []
+            params = {'id': id}
+            for field_name, form_val in request.form.items():
+                if field_name not in ALLOWED_COLUMNS:
                     continue
-                header_key = str(header).strip()
-                for field_name, form_val in request.form.items():
-                    if field_name.lower() == header_key.lower():
-                        sheet.cell(row=excel_row_idx, column=col_idx, value=form_val)
-            
-            wb.save(excel_path)
+
+                value = form_val.strip() if form_val else None
+                if value == '':
+                    value = None
+                elif field_name in INT_COLUMNS:
+                    try:
+                        value = int(value)
+                    except (TypeError, ValueError):
+                        value = None
+                elif field_name in NUMERIC_COLUMNS:
+                    try:
+                        value = float(value)
+                    except (TypeError, ValueError):
+                        value = None
+                elif field_name in DATE_COLUMNS and value in ('-',):
+                    value = None
+
+                set_clauses.append(f'{field_name} = :{field_name}')
+                params[field_name] = value
+
+            if set_clauses:
+                query = f"UPDATE projects SET {', '.join(set_clauses)} WHERE id = :id"
+                db.session.execute(text(query), params)
+                db.session.commit()
+
             flash('Data project berhasil diperbarui!', 'success')
             return redirect(url_for('admin.list_projects'))
         except Exception as e:
+            db.session.rollback()
             flash(f'Gagal memperbarui project: {str(e)}', 'danger')
 
-    project_dict = {'id': id}
-    for col_idx, header in enumerate(headers, 1):
-        if not header:
-            continue
-        val = sheet.cell(row=excel_row_idx, column=col_idx).value
-        if isinstance(val, datetime):
-            val = val.strftime('%Y-%m-%d')
-        project_dict[str(header).strip()] = val if val is not None else ''
+    row = db.session.execute(text('SELECT * FROM projects WHERE id = :id'), {'id': id}).mappings().fetchone()
+    if not row:
+        flash('Project tidak ditemukan.', 'danger')
+        return redirect(url_for('admin.list_projects'))
 
+    project_dict = dict(row)
     return render_template('admin/edit_project.html', active_page='projects', project=project_dict)

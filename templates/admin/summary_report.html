@@ -72,28 +72,32 @@
         </div>
 
         <div class="table-responsive" style="max-height: 550px; overflow-y: auto;">
-            <table class="table table-hover mb-0 align-middle text-nowrap" style="font-size: 13px; border-collapse: separate; border-spacing: 0 6px;">
+            <table class="table table-hover mb-0 align-middle text-nowrap" style="font-size: 13px; border-collapse: collapse;">
                 {% if table_columns %}
-                <thead>
+                <thead style="position: sticky; top: 0; z-index: 1;">
                     <tr>
                         {% for col in table_columns %}
-                        <th class="py-3 px-3 text-nowrap" style="background-color: var(--surface-2); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">{{ col | replace('_', ' ') }}</th>
+                        <th class="py-3 px-3 text-nowrap" style="background-color: var(--surface-2); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-strong);">{{ col | replace('_', ' ') }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
                 {% endif %}
                 <tbody>
                     {% for row in table_rows %}
-                    <tr style="background-color: var(--surface-2); transition: background 0.2s;" onmouseover="this.style.background='var(--surface-hover)'" onmouseout="this.style.background='var(--surface-2)'">
+                    <tr style="transition: background 0.2s;" onmouseover="this.style.background='var(--surface-hover)'" onmouseout="this.style.background='transparent'">
                         {% for cell in row %}
-                        <td class="py-3 px-3 {% if loop.index0 == 0 %}fw-bold text-warning border-start border-3 border-danger{% endif %}" style="border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+                        <td class="py-3 px-3 {% if loop.index0 == 0 %}fw-bold text-danger{% endif %}" style="border-bottom: 1px solid var(--border);">
                             {{ cell if cell is not none and cell != 'nan' else '-' }}
                         </td>
                         {% endfor %}
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="20" class="text-center text-muted py-5">Belum ada data project yang diinput untuk tahun {{ tahun }}. Data histori lama (sebelum sistem ini) hanya tersedia sebagai angka rekap di grafik atas.</td>
+                        <td colspan="20" class="text-center py-5" style="color: var(--text-muted);">
+                            <i class="fas fa-folder-open fa-2x mb-3 d-block" style="opacity: 0.4;"></i>
+                            Belum ada data project yang diinput untuk tahun {{ tahun }}.<br>
+                            <span style="font-size: 12px;">Data histori lama (sebelum sistem ini) hanya tersedia sebagai angka rekap di grafik atas.</span>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
