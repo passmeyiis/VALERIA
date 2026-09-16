@@ -6,7 +6,7 @@
     <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-4">
         <div>
             <h2 class="fw-bold mb-2"><i class="fas fa-chart-bar text-danger me-2"></i>Executive Financial Summary {{ tahun }}</h2>
-            <p class="text-muted mb-0">Analisis dan rekapitulasi data terstruktur yang disinkronkan langsung dari file sumber Excel.</p>
+            <p class="text-muted mb-0">Analisis dan rekapitulasi data terstruktur langsung dari database.</p>
         </div>
         
         <!-- Switch Button Tahun (Modern Pill) -->
@@ -66,13 +66,22 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h4 class="fw-bold mb-1"><i class="fas fa-table text-danger me-2"></i>Matriks Detail Sumber Data ({{ tahun }})</h4>
-                <p class="text-muted small mb-0">Rincian tabel rekapitulasi lengkap yang ditarik dari sheet Sum {{ tahun }}</p>
+                <p class="text-muted small mb-0">Data project yang diinput lewat halaman "Daftar Projects" untuk tahun {{ tahun }}</p>
             </div>
             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2">Structured Source Table</span>
         </div>
 
         <div class="table-responsive" style="max-height: 550px; overflow-y: auto;">
             <table class="table table-hover mb-0 align-middle text-nowrap" style="font-size: 13px; border-collapse: separate; border-spacing: 0 6px;">
+                {% if table_columns %}
+                <thead>
+                    <tr>
+                        {% for col in table_columns %}
+                        <th class="py-3 px-3 text-nowrap" style="background-color: var(--surface-2); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">{{ col | replace('_', ' ') }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                {% endif %}
                 <tbody>
                     {% for row in table_rows %}
                     <tr style="background-color: var(--surface-2); transition: background 0.2s;" onmouseover="this.style.background='var(--surface-hover)'" onmouseout="this.style.background='var(--surface-2)'">
@@ -84,7 +93,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="20" class="text-center text-muted py-5">Data rekapitulasi untuk tahun {{ tahun }} tidak ditemukan.</td>
+                        <td colspan="20" class="text-center text-muted py-5">Belum ada data project yang diinput untuk tahun {{ tahun }}. Data histori lama (sebelum sistem ini) hanya tersedia sebagai angka rekap di grafik atas.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

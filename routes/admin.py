@@ -260,74 +260,58 @@ def admin_analytics():
 @admin_bp.route('/admin/summary/<int:tahun>')
 @admin_required
 def summary_page(tahun):
-    excel_path = 'report ITND fix(3).xlsx'
-    sheet_name = f'Sum {tahun}'
+    from extensions import db
+    from sqlalchemy import text
 
-    summary_data = []
     monthly_labels = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
     monthly_revenues = [0] * 12
     total_project_val = 0
     total_revenue_val = 0
 
-    sales_labels = ['Adi', 'Dwi', 'Duta', 'Gugum']
-    sales_revenues = [0, 0, 0, 0]
+    # Ambil trend revenue bulanan dari tabel histori
+    rows = db.session.execute(
+        text('SELECT bulan, revenue FROM monthly_revenue_history WHERE tahun = :tahun ORDER BY bulan'),
+        {'tahun': tahun}
+    ).fetchall()
+    for bulan, revenue in rows:
+        if 1 <= bulan <= 12:
+            monthly_revenues[bulan - 1] = float(revenue)
 
-    if os.path.exists(excel_path):
-        try:
-            df = pd.read_excel(excel_path, sheet_name=sheet_name, header=None)
-            summary_data = df.fillna('').astype(str).values.tolist()
-            
-            target_row = None
-            label_col_idx = None
-            for idx, row in df.iterrows():
-                for col_idx, cell in enumerate(row):
-                    if isinstance(cell, str) and 'Revenue Project' in cell:
-                        target_row = row
-                        label_col_idx = col_idx
-                        break
-                if target_row is not None:
-                    break
+    # Ambil total tahunan dari tabel histori (kalau ada)
+    yearly = db.session.execute(
+        text('SELECT total_project, total_revenue FROM yearly_summary_history WHERE tahun = :tahun'),
+        {'tahun': tahun}
+    ).fetchone()
+    if yearly:
+        total_project_val = yearly[0] or 0
+        total_revenue_val = float(yearly[1] or 0)
+    else:
+        total_revenue_val = sum(monthly_revenues)
 
-            if target_row is not None and label_col_idx is not None:
-                for i in range(12):
-                    col = label_col_idx + 1 + i
-                    val = target_row.iloc[col] if col < len(target_row) else None
-                    try:
-                        monthly_revenues[i] = float(val) if pd.notna(val) else 0
-                    except (TypeError, ValueError):
-                        monthly_revenues[i] = 0
+    # Matriks detail: data project asli dari tabel projects (data yang diinput lewat web)
+    project_rows = db.session.execute(
+        text('SELECT * FROM projects WHERE tahun = :tahun ORDER BY id DESC'),
+        {'tahun': tahun}
+    ).mappings().fetchall()
 
+    # Kalau tabel projects untuk tahun ini kosong (histori lama belum ada data
+    # per-project), pakai jumlah dari yearly_summary_history sebagai fallback
+    if not project_rows and yearly:
+        total_project_val = yearly[0] or 0
 
-            if len(df) > 1:
-                total_project_val = df.iloc[1, 3] if not pd.isna(df.iloc[1, 3]) else 0
-            if len(df) > 3:
-                total_revenue_val = df.iloc[3, 3] if not pd.isna(df.iloc[3, 3]) else sum(monthly_revenues)
-
-            for idx, row in df.iterrows():
-                val0 = str(row.iloc[1]) if len(row) > 1 else ''
-                if val0 == 'Adi':
-                    sales_revenues[0] = float(row.iloc[13]) if len(row) > 13 and pd.notna(row.iloc[13]) else 0
-                elif val0 == 'Dwi':
-                    sales_revenues[1] = float(row.iloc[13]) if len(row) > 13 and pd.notna(row.iloc[13]) else 0
-                elif val0 == 'Duta':
-                    sales_revenues[2] = float(row.iloc[13]) if len(row) > 13 and pd.notna(row.iloc[13]) else 0
-                elif val0 == 'Gugum':
-                    sales_revenues[3] = float(row.iloc[13]) if len(row) > 13 and pd.notna(row.iloc[13]) else 0
-
-        except Exception as e:
-            flash(f'Gagal memuat sheet {sheet_name}: {str(e)}', 'danger')
+    table_columns = list(project_rows[0].keys()) if project_rows else []
+    table_rows = [list(r.values()) for r in project_rows]
 
     return render_template(
         'admin/summary_report.html',
         active_page=f'summary_{tahun}',
         tahun=tahun,
-        table_rows=summary_data,
+        table_columns=table_columns,
+        table_rows=table_rows,
         monthly_labels=monthly_labels,
         monthly_revenues=monthly_revenues,
         total_project=total_project_val,
         total_revenue=total_revenue_val,
-        sales_labels=sales_labels,
-        sales_revenues=sales_revenues
     )
 
 
