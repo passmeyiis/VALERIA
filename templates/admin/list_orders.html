@@ -3,9 +3,10 @@
 {% block page_title %}Daftar Orders{% endblock %}
 
 {% block content %}
-<div style="padding: 20px 0;">
+<div class="container-fluid" style="padding-top: 20px; padding-bottom: 20px; padding-left: 12px; padding-right: 24px;">
     <!-- Header dengan Tombol di Kanan -->
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+    <div class="card p-4 rounded-4 shadow mb-4">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
         <div>
             <h2 class="fw-bold mb-1"><i class="fas fa-shopping-bag text-danger me-2"></i>Daftar Orders</h2>
             <p style="color: var(--text-muted); font-size: 14px; margin: 0 0 8px 0;">Keseluruhan data order, client, dan dokumen BA dari database</p>
@@ -16,11 +17,12 @@
         
         <!-- Tombol Tambah Order -->
         <div>
-            <a href="{{ url_for('admin.add_order') }}" style="background-color: var(--primary); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px var(--primary-soft);" onmouseover="this.style.backgroundColor='var(--primary-hover)'" onmouseout="this.style.backgroundColor='var(--primary)'">
+            <a href="{{ url_for('admin.add_order') }}" style="background-color: var(--primary); color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px var(--primary-soft);" onmouseover="this.style.backgroundColor='var(--primary-hover)'" onmouseout="this.style.backgroundColor='var(--primary)'">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 Tambah Order
             </a>
         </div>
+    </div>
     </div>
 
     <!-- Kotak Input Search -->
