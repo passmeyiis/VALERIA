@@ -7,6 +7,7 @@
     <!-- Header dengan Tombol di Kanan -->
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
         <div>
+            <h2 class="fw-bold mb-1"><i class="fas fa-shopping-bag text-danger me-2"></i>Daftar Orders</h2>
             <p style="color: var(--text-muted); font-size: 14px; margin: 0 0 8px 0;">Keseluruhan data order, client, dan dokumen BA dari database</p>
             <div style="display: inline-block; background: var(--primary-soft); color: var(--primary); border: 1px solid var(--primary-border); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
                 Total: {{ orders | length }} Data
@@ -33,26 +34,26 @@
     </div>
 
     <!-- Tabel Data Orders -->
-    <div style="background-color: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);">
-        <div style="max-height: 70vh; overflow-y: auto; overflow-x: auto;">
-            <table id="orderTable" style="width: 100%; border-collapse: collapse; color: var(--text); font-size: 13px; text-align: left;">
-                <thead style="position: sticky; top: 0; background-color: var(--surface-2); z-index: 2;">
-                    <tr style="border-bottom: 1px solid var(--border-strong);">
+    <div class="card p-4 rounded-4 shadow">
+        <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+            <table id="orderTable" class="table table-hover align-middle mb-0" style="font-size: 13px;">
+                <thead class="sticky-top" style="z-index: 1;">
+                    <tr>
                         {% if orders and orders[0] %}
                             {% for key in orders[0].keys() %}
-                            <th style="padding: 12px 16px; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; color: var(--text-muted); white-space: nowrap;">{{ key | replace('_', ' ') }}</th>
+                            <th class="py-3 px-3 text-nowrap">{{ key | replace('_', ' ') | title }}</th>
                             {% endfor %}
-                            <th style="padding: 12px 16px; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; color: var(--text-muted); text-align: center; white-space: nowrap;">Aksi</th>
+                            <th class="py-3 px-3 text-center text-nowrap">Aksi</th>
                         {% else %}
-                            <th style="padding: 12px 16px;">Data Orders Kosong</th>
+                            <th>Data Orders Kosong</th>
                         {% endif %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in orders %}
-                    <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;" onmouseover="this.style.background='var(--surface-hover)'" onmouseout="this.style.background='transparent'">
+                    <tr>
                         {% for key, val in row.items() %}
-                        <td style="padding: 12px 16px; vertical-align: middle; {% if 'harga' in key.lower() or 'nilai' in key.lower() %}text-align: right; white-space: nowrap;{% else %}white-space: nowrap;{% endif %}">
+                        <td class="px-3 py-3" style="{% if 'dasar' in key.lower() or 'keterangan' in key.lower() or 'surat' in key.lower() %}min-width: 260px; white-space: normal; word-break: break-word;{% elif 'harga' in key.lower() or 'nilai' in key.lower() %}min-width: 150px; white-space: nowrap; text-align: right;{% else %}min-width: 120px; white-space: nowrap;{% endif %}">
                             {% if 'file ba' in key.lower() and val and val != '-' %}
                                 <a href="{{ val }}" target="_blank" style="background: rgba(56, 139, 253, 0.15); color: #58a6ff; border: 1px solid rgba(56, 139, 253, 0.4); padding: 4px 12px; border-radius: 20px; font-size: 11px; text-decoration: none; font-weight: 600;">
                                     Lihat Dokumen
@@ -70,7 +71,7 @@
                         </td>
                         {% endfor %}
                         <!-- Kolom Tombol Edit -->
-                        <td style="padding: 12px 16px; text-align: center; white-space: nowrap; vertical-align: middle;">
+                        <td class="px-3 py-3 text-center text-nowrap">
                             <a href="{{ url_for('admin.edit_order', id=row.id) }}" style="background: rgba(240, 136, 62, 0.15); color: #f0883e; border: 1px solid rgba(240, 136, 62, 0.4); padding: 5px 12px; border-radius: 6px; font-size: 11px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 Edit
@@ -79,7 +80,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="25" style="text-align: center; color: var(--text-muted); padding: 40px;">Belum ada data orders.</td>
+                        <td colspan="25" class="text-center text-muted py-4">Belum ada data orders.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
