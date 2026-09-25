@@ -89,10 +89,8 @@
 
 /* =========================================================
    VALERIA — Light Mode Component Overrides
-   (satu sumber kebenaran, jangan diduplikasi di tempat lain)
    ========================================================= */
 
-/* Teks judul & konten di dalam card */
 [data-theme="light"] h1,
 [data-theme="light"] h2,
 [data-theme="light"] h3,
@@ -117,7 +115,6 @@
   color: var(--text-muted) !important;
 }
 
-/* Card & container */
 [data-theme="light"] .card,
 [data-theme="light"] .stat-card {
   background: var(--surface) !important;
@@ -131,7 +128,6 @@
   background-color: var(--surface) !important;
 }
 
-/* Switcher / toggle pill */
 [data-theme="light"] .switcher,
 [data-theme="light"] .year-switch,
 [data-theme="light"] div:has(> .btn, > button),
@@ -140,7 +136,6 @@
   border-color: var(--border-strong) !important;
 }
 
-/* Tabel: header */
 [data-theme="light"] table th,
 [data-theme="light"] thead th,
 [data-theme="light"] table.table th {
@@ -149,7 +144,6 @@
   border-bottom-color: var(--border-strong) !important;
 }
 
-/* Tabel: sel data */
 [data-theme="light"] table td,
 [data-theme="light"] tbody td,
 [data-theme="light"] table.table td,
@@ -163,7 +157,6 @@
   color: var(--text) !important;
 }
 
-/* Tabel: hover baris — abu-abu netral, senada sidebar */
 [data-theme="light"] table tbody tr:hover,
 [data-theme="light"] table.table-hover tbody tr:hover,
 [data-theme="light"] .table-hover tbody tr:hover,
@@ -188,9 +181,6 @@ html, body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
-/* =========================================================
-   Custom Clean Scrollbar (Minimalist & Modern)
-   ========================================================= */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -611,21 +601,20 @@ h1, h2, h3, h4, .font-display, .card-title {
 @media (max-width: 600px) { .field-row { grid-template-columns: 1fr; } }
 
 /* =========================================================
-   FIXED: Kotak Tabel Memanjang ke Bawah (Full-Height / Long Box)
+   FLEXIBLE TABLE CONTAINER (Diubah agar bisa melar penuh)
    ========================================================= */
 
 .card:has(table), .card:has(.table-wrap) {
-  padding: 20px 0 !important;
+  padding: 20px !important;
   width: 100% !important;
   max-width: 100% !important;
   display: flex !important;
   flex-direction: column !important;
-  min-height: 720px !important;
 }
 
 .card:has(table) .card-header,
 .card:has(.table-wrap) .card-header {
-  padding: 0 24px 16px 24px !important;
+  padding: 0 0 16px 0 !important;
   margin-bottom: 0 !important;
   flex-shrink: 0;
 }
@@ -633,15 +622,12 @@ h1, h2, h3, h4, .font-display, .card-title {
 .table-wrap, div:has(> table) {
   width: 100% !important;
   max-width: 100% !important;
-  flex: 1 !important;
-  overflow-y: auto !important;
   overflow-x: auto !important;
   padding: 0 !important;
   margin: 0 !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  max-height: 650px !important;
 }
 
 table, table.table {
@@ -966,14 +952,12 @@ table tbody tr:last-child td {
   color: var(--text) !important;
 }
 
-/* Paksa angka/teks yang tidak aktif jadi warna terang/muted di dark mode */
 [data-theme="dark"] .card-header div[style*="background"] *,
 [data-theme="dark"] .card-header div[class*="flex"] > div *,
 [data-theme="dark"] .card-header .flex > div * {
   color: var(--text-muted) !important;
 }
 
-/* Khusus tombol/pill yang aktif jadi merah Valeria dengan teks putih terang */
 [data-theme="dark"] .card-header div[style*="background"] [style*="background"],
 [data-theme="dark"] .card-header div[class*="flex"] > div.active,
 [data-theme="dark"] .card-header .flex > div.active,
