@@ -1,5 +1,8 @@
+import os
 import random
+import smtplib
 import string
+from email.mime.text import MIMEText
 from flask import Blueprint, redirect, render_template, request, session, url_for, flash
 
 from extensions import db
@@ -9,6 +12,42 @@ auth_bp = Blueprint('auth', __name__)
 
 # Temporary storage untuk kode verifikasi lupa password
 reset_tokens = {}
+
+
+def send_reset_email(to_email: str, code: str) -> bool:
+    """Kirim email berisi kode reset password lewat Gmail SMTP.
+    Return True kalau berhasil terkirim, False kalau gagal (misal env var belum diset)."""
+    mail_username = os.environ.get('MAIL_USERNAME')
+    mail_password = os.environ.get('MAIL_PASSWORD')
+    mail_sender = os.environ.get('MAIL_SENDER', mail_username)
+
+    if not mail_username or not mail_password:
+        print('[EMAIL ERROR] MAIL_USERNAME / MAIL_PASSWORD belum diset di environment variable.')
+        return False
+
+    subject = 'Kode Reset Password - Valeria'
+    body = (
+        f'Halo,\n\n'
+        f'Kode verifikasi untuk reset password akun Valeria kamu adalah:\n\n'
+        f'VAL-{code}\n\n'
+        f'Kode ini berlaku untuk satu kali pemakaian. Kalau kamu tidak merasa meminta reset password, abaikan email ini.\n\n'
+        f'Terima kasih,\nTim Valeria'
+    )
+
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = mail_sender
+    msg['To'] = to_email
+
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(mail_username, mail_password)
+            server.sendmail(mail_sender, [to_email], msg.as_string())
+        return True
+    except Exception as e:
+        print(f'[EMAIL ERROR] Gagal kirim email ke {to_email}: {e}')
+        return False
 
 
 @auth_bp.route('/')
@@ -70,8 +109,12 @@ def forgot_password():
         session['reset_email'] = email
         session['reset_code'] = code
         
-        # Simulasi pengiriman kode (bisa dicek di terminal Flask)
-        print(f"\n[KODE REFERRAL RESET] Untuk email '{email}' adalah: VAL-{code}\n")
+        # Kirim email beneran berisi kode verifikasi
+        sent = send_reset_email(email, code)
+        if sent:
+            flash('Kode verifikasi sudah dikirim ke email kamu.', 'success')
+        else:
+            flash('Gagal mengirim email. Cek kembali konfigurasi email server.', 'danger')
         
         return redirect(url_for('auth.reset_password'))
         
@@ -110,8 +153,8 @@ def reset_password():
         
         flash('Kode verifikasi salah atau sudah kedaluwarsa.', 'danger')
         
-    # Kirim kode display ke template agar user bisa melihat langsung kodenya (sebagai simulasi referral/email)
-    return render_template('auth/reset_password.html', display_code=f"VAL-{actual_code}", email=target_email)
+    # Kirim data ke template (kode verifikasi TIDAK ditampilkan di layar lagi, cuma ada di email)
+    return render_template('auth/reset_password.html', email=target_email)
 
 
 @auth_bp.route('/logout')
