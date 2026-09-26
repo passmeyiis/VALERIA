@@ -42,6 +42,7 @@ def kelola_pengguna():
 def tambah_pengguna():
     username = request.form.get('username', '').strip()
     name = request.form.get('name', '').strip()
+    email = request.form.get('email', '').strip() or None
     password = request.form.get('password', '')
     role = request.form.get('role', 'klien')
     reason = request.form.get('reason', '').strip() or None
@@ -54,7 +55,11 @@ def tambah_pengguna():
         flash('Username sudah dipakai, pilih username lain.', 'danger')
         return redirect(url_for('admin.kelola_pengguna'))
 
-    user = User(username=username, name=name, role=role)
+    if email and User.query.filter_by(email=email).first():
+        flash('Email sudah dipakai akun lain.', 'danger')
+        return redirect(url_for('admin.kelola_pengguna'))
+
+    user = User(username=username, name=name, email=email, role=role)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
@@ -76,6 +81,15 @@ def ubah_pengguna(user_id):
     user = User.query.get_or_404(user_id)
     user.name = request.form.get('name', user.name).strip()
     user.role = request.form.get('role', user.role)
+
+    new_email = request.form.get('email', '').strip() or None
+    if new_email != user.email:
+        existing = User.query.filter_by(email=new_email).first() if new_email else None
+        if existing and existing.id != user.id:
+            flash('Email sudah dipakai akun lain.', 'danger')
+            return redirect(url_for('admin.kelola_pengguna'))
+        user.email = new_email
+
     reason = request.form.get('reason', '').strip() or None
 
     new_password = request.form.get('password', '')
