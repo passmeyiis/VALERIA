@@ -1021,3 +1021,80 @@ table tbody tr:last-child td {
 .main-col, .main-content {
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+/* =========================================================
+   VALERIA — Clean Sidebar Collapsed State Fix
+   ========================================================= */
+
+/* Pastikan sidebar punya transisi rapi */
+.sidebar {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+}
+
+/* Saat mode collapsed/minimize */
+.sidebar.collapsed {
+  width: 76px !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+/* 1. Sembunyikan semua teks, label grup, scope, dan sub-brand secara total */
+.sidebar.collapsed .brand-name,
+.sidebar.collapsed .brand-sub,
+.sidebar.collapsed .sidebar-scope,
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .menu-text,
+.sidebar.collapsed .badge,
+.sidebar.collapsed .arrow-icon {
+  display: none !important;
+}
+
+/* 2. Rapikan Brand Logo di atas jadi di tengah */
+.sidebar.collapsed .sidebar-brand {
+  justify-content: center !important;
+  padding: 20px 0 !important;
+  gap: 0 !important;
+}
+
+.sidebar.collapsed .brand-mark {
+  margin: 0 auto;
+}
+
+/* 3. Rapikan Navigasi & Link Menu jadi center & hilangkan padding menjorok */
+.sidebar.collapsed .sidebar-nav {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.sidebar.collapsed .nav-group {
+  padding: 0 !important;
+  margin-bottom: 12px;
+}
+
+.sidebar.collapsed .nav-link,
+.sidebar.collapsed .logout-link,
+.sidebar.collapsed .menu-item {
+  justify-content: center !important;
+  padding: 12px 0 !important;
+  padding-left: 0 !important; /* Reset padding sub-menu yang tadinya 32px */
+  margin: 4px auto !important;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  gap: 0 !important;
+}
+
+/* 4. Pastikan ikon SVG di dalam menu tidak punya margin bawaan */
+.sidebar.collapsed .nav-link svg,
+.sidebar.collapsed .logout-link svg,
+.sidebar.collapsed .menu-item svg {
+  margin: 0 !important;
+  width: 20px;
+  height: 20px;
+}
+
+/* 5. Rapikan Footer/Logout di bawah */
+.sidebar.collapsed .sidebar-footer {
+  justify-content: center !important;
+  padding: 16px 0 !important;
+}
