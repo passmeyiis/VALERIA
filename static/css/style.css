@@ -610,6 +610,7 @@ h1, h2, h3, h4, .font-display, .card-title {
   max-width: 100% !important;
   display: flex !important;
   flex-direction: column !important;
+  min-height: 75vh !important;
 }
 
 .card:has(table) .card-header,
@@ -623,11 +624,13 @@ h1, h2, h3, h4, .font-display, .card-title {
   width: 100% !important;
   max-width: 100% !important;
   overflow-x: auto !important;
+  overflow-y: auto !important;
   padding: 0 !important;
   margin: 0 !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  flex: 1 !important;
 }
 
 table, table.table {
@@ -635,7 +638,7 @@ table, table.table {
   max-width: 100% !important;
   min-width: 100% !important;
   border-collapse: collapse !important;
-  font-size: 13.5px !important;
+  font-size: 14.5px !important;
   color: var(--text) !important;
   margin-bottom: 0 !important;
   background-color: transparent !important;
@@ -647,9 +650,9 @@ table th, thead th, table.table th {
   color: var(--text) !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
-  font-size: 11.5px !important;
+  font-size: 12px !important;
   letter-spacing: 0.06em !important;
-  padding: 16px 20px !important;
+  padding: 22px 28px !important;
   border-bottom: 2px solid var(--border-strong) !important;
   position: sticky !important;
   top: 0 !important;
@@ -658,7 +661,7 @@ table th, thead th, table.table th {
 }
 
 table td, tbody td, table.table td {
-  padding: 18px 20px !important;
+  padding: 24px 28px !important;
   color: var(--text) !important;
   background-color: var(--surface) !important;
   border-bottom: 1px solid var(--border) !important;
