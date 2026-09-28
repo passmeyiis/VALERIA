@@ -1,8 +1,7 @@
 import os
 import random
-import smtplib
 import string
-from email.mime.text import MIMEText
+import resend
 from flask import Blueprint, redirect, render_template, request, session, url_for, flash
 
 from extensions import db
@@ -15,35 +14,31 @@ reset_tokens = {}
 
 
 def send_reset_email(to_email: str, code: str) -> bool:
-    """Kirim email berisi kode reset password lewat Gmail SMTP.
-    Return True kalau berhasil terkirim, False kalau gagal (misal env var belum diset)."""
-    mail_username = os.environ.get('MAIL_USERNAME')
-    mail_password = os.environ.get('MAIL_PASSWORD')
-    mail_sender = os.environ.get('MAIL_SENDER', mail_username)
+    """Kirim email berisi kode reset password lewat Resend (pakai SDK resmi).
+    Return True kalau berhasil terkirim, False kalau gagal (misal API key belum diset)."""
+    api_key = os.environ.get('RESEND_API_KEY')
 
-    if not mail_username or not mail_password:
-        print('[EMAIL ERROR] MAIL_USERNAME / MAIL_PASSWORD belum diset di environment variable.')
+    if not api_key:
+        print('[EMAIL ERROR] RESEND_API_KEY belum diset di environment variable.')
         return False
 
-    subject = 'Kode Reset Password - Valeria'
-    body = (
-        f'Halo,\n\n'
-        f'Kode verifikasi untuk reset password akun Valeria kamu adalah:\n\n'
-        f'VAL-{code}\n\n'
-        f'Kode ini berlaku untuk satu kali pemakaian. Kalau kamu tidak merasa meminta reset password, abaikan email ini.\n\n'
-        f'Terima kasih,\nTim Valeria'
+    resend.api_key = api_key
+
+    body_html = (
+        f'<p>Halo,</p>'
+        f'<p>Kode verifikasi untuk reset password akun Valeria kamu adalah:</p>'
+        f'<h2>VAL-{code}</h2>'
+        f'<p>Kode ini berlaku untuk satu kali pemakaian. Kalau kamu tidak merasa meminta reset password, abaikan email ini.</p>'
+        f'<p>Terima kasih,<br>Tim Valeria</p>'
     )
 
-    msg = MIMEText(body)
-    msg['Subject'] = subject
-    msg['From'] = mail_sender
-    msg['To'] = to_email
-
     try:
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
-            server.starttls()
-            server.login(mail_username, mail_password)
-            server.sendmail(mail_sender, [to_email], msg.as_string())
+        resend.Emails.send({
+            'from': 'onboarding@resend.dev',
+            'to': to_email,
+            'subject': 'Kode Reset Password - Valeria',
+            'html': body_html,
+        })
         return True
     except Exception as e:
         print(f'[EMAIL ERROR] Gagal kirim email ke {to_email}: {e}')
