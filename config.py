@@ -22,6 +22,15 @@ class Config:
     SQLALCHEMY_DATABASE_URI = raw_db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Cegah error "SSL SYSCALL error: EOF detected" / koneksi basi ke PostgreSQL:
+    # pool_pre_ping mengetes tiap koneksi sebelum dipakai, dan otomatis reconnect
+    # kalau ternyata sudah putus. pool_recycle memaksa recycle koneksi sebelum
+    # keburu ditutup paksa oleh server (Render biasanya ~5 menit idle timeout).
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 280,
+    }
+
     # --- Integrasi PRTG ---
     PRTG_BASE_URL = os.environ.get('PRTG_BASE_URL', 'http://127.0.0.1')
     PRTG_USERNAME = os.environ.get('PRTG_USERNAME', 'prtgadmin')
