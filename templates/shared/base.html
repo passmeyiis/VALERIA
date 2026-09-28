@@ -38,55 +38,55 @@
                     <p class="nav-label">Monitoring</p>
                     <a href="{{ url_for('admin.dashboard_admin') }}" class="nav-link {{ 'active' if active_page == 'dashboard_admin' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
-                        Dashboard Admin
+                        <span class="menu-text">Dashboard Admin</span>
                     </a>
                     
                     <!-- Analytics Dashboard -->
                     <a href="{{ url_for('admin.admin_analytics') }}" class="nav-link {{ 'active' if active_page == 'analytics' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-                        Analytics Dashboard
+                        <span class="menu-text">Analytics Dashboard</span>
                     </a>
 
-                    <!-- Menu Baru di bawah Analytics / Summary -->
+                    <!-- Sub Menu -->
                     <a href="{{ url_for('admin.summary_page', tahun=2026) }}" class="nav-link {{ 'active' if active_page.startswith('summary_') }}" style="padding-left: 32px; font-size: 13px;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-                        Summary Tahunan
+                        <span class="menu-text">Summary Tahunan</span>
                     </a>
                     <a href="{{ url_for('admin.report_dis_dow') }}" class="nav-link {{ 'active' if active_page == 'report_dis_dow' }}" style="padding-left: 32px; font-size: 13px;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-                        Dismentle & Downgrade
+                        <span class="menu-text">Dismentle & Downgrade</span>
                     </a>
                     <a href="{{ url_for('admin.report_case_1500') }}" class="nav-link {{ 'active' if active_page == 'report_case_1500' }}" style="padding-left: 32px; font-size: 13px;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-                        Case 1500 & Connect
+                        <span class="menu-text">Case 1500 & Connect</span>
                     </a>
 
                     <a href="{{ url_for('admin.list_orders') }}" class="nav-link {{ 'active' if active_page == 'orders' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                        Daftar Orders
+                        <span class="menu-text">Daftar Orders</span>
                     </a>
                     <a href="{{ url_for('admin.list_projects') }}" class="nav-link {{ 'active' if active_page == 'projects' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                        Daftar Projects
+                        <span class="menu-text">Daftar Projects</span>
                     </a>
                     <a href="{{ url_for('shared.ip_management') }}" class="nav-link {{ 'active' if active_page == 'ip_management' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>
-                        IP Management
+                        <span class="menu-text">IP Management</span>
                     </a>
                     <a href="{{ url_for('shared.scheduler_page') }}" class="nav-link {{ 'active' if active_page == 'scheduler' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 2v4M16 2v4"/></svg>
-                        Scheduler
+                        <span class="menu-text">Scheduler</span>
                     </a>
                 </div>
                 <div class="nav-group">
                     <p class="nav-label">Administration</p>
                     <a href="{{ url_for('admin.kelola_pengguna') }}" class="nav-link {{ 'active' if active_page == 'kelola_pengguna' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                        Kelola Pengguna
+                        <span class="menu-text">Kelola Pengguna</span>
                     </a>
                     <a href="{{ url_for('admin.audit_logs') }}" class="nav-link {{ 'active' if active_page == 'audit_logs' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg>
-                        Audit Logs
+                        <span class="menu-text">Audit Logs</span>
                     </a>
                 </div>
                 {% else %}
@@ -94,15 +94,15 @@
                     <p class="nav-label">Menu</p>
                     <a href="{{ url_for('klien.dashboard_klien') }}" class="nav-link {{ 'active' if active_page == 'dashboard_klien' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
-                        Dashboard
+                        <span class="menu-text">Dashboard</span>
                     </a>
                     <a href="{{ url_for('shared.ip_management') }}" class="nav-link {{ 'active' if active_page == 'ip_management' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>
-                        IP Management
+                        <span class="menu-text">IP Management</span>
                     </a>
                     <a href="{{ url_for('shared.scheduler_page') }}" class="nav-link {{ 'active' if active_page == 'scheduler' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 2v4M16 2v4"/></svg>
-                        Scheduler
+                        <span class="menu-text">Scheduler</span>
                     </a>
                 </div>
                 {% endif %}
@@ -111,7 +111,7 @@
             <div class="sidebar-footer">
                 <a href="{{ url_for('auth.logout') }}" class="logout-link">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-                    Logout
+                    <span class="menu-text">Logout</span>
                 </a>
             </div>
         </aside>
@@ -119,7 +119,18 @@
         <!-- MAIN CONTENT AREA -->
         <div class="main-col">
             <header class="topbar">
-                <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <!-- Tombol Toggle Sidebar -->
+                    <button id="sidebarToggle" class="btn btn-secondary btn-sm" style="padding: 6px 10px;" title="Toggle Sidebar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                </div>
+
                 <div class="topbar-right">
                     <!-- Tombol Toggle Tema (Light / Dark) -->
                     <button id="themeToggleBtn" onclick="toggleTheme()" class="btn btn-secondary btn-sm" title="Ganti Tema">
@@ -155,7 +166,7 @@
         </div>
     </div>
 
-    <!-- Script Pengaturan Tema -->
+    <!-- Script Pengaturan Tema & Toggle Sidebar -->
     <script>
     function toggleTheme() {
         const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -178,6 +189,18 @@
         document.documentElement.setAttribute('data-theme', savedTheme);
         updateThemeUI(savedTheme);
     })();
+
+    // Script Interaksi Sidebar Collapse
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggleBtn = document.getElementById('sidebarToggle');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if (toggleBtn && sidebar) {
+            toggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+            });
+        }
+    });
     </script>
 
     <!-- Bootstrap JS Bundle -->

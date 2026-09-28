@@ -972,3 +972,52 @@ table tbody tr:last-child td {
 [data-theme="dark"] .card-header .flex > div.active * {
   color: #FFFFFF !important;
 }
+/* Efek transisi halus pada sidebar */
+.sidebar {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+}
+
+/* Lebar sidebar saat mode tertutup/collapsed */
+.sidebar.collapsed {
+  width: 80px !important;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+/* Sembunyikan semua teks menu, label, scope, dan brand ketika collapsed */
+.sidebar.collapsed .brand-sub,
+.sidebar.collapsed .brand-name,
+.sidebar.collapsed .menu-text,
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .sidebar-scope,
+.sidebar.collapsed .sidebar-section-title,
+.sidebar.collapsed .badge,
+.sidebar.collapsed .arrow-icon {
+  display: none !important;
+}
+
+/* Posisi logo dan ikon menu agar pas di tengah saat collapsed */
+.sidebar.collapsed .sidebar-brand {
+  justify-content: center;
+  padding: 24px 0 18px;
+}
+
+.sidebar.collapsed .nav-link,
+.sidebar.collapsed .logout-link,
+.sidebar.collapsed .menu-item {
+  justify-content: center;
+  padding: 12px 0;
+  gap: 0;
+}
+
+.sidebar.collapsed .nav-link svg,
+.sidebar.collapsed .logout-link svg,
+.sidebar.collapsed .menu-item svg {
+  margin-right: 0 !important;
+}
+
+/* Transisi area konten utama */
+.main-col, .main-content {
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
