@@ -674,6 +674,13 @@ table td:last-child, table th:last-child {
   min-width: 250px;
 }
 
+table td:last-child {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 24px;
+}
+
 table tbody tr:hover td, table.table-hover tbody tr:hover td {
   background-color: var(--primary-soft) !important;
   color: var(--text) !important;
@@ -690,11 +697,14 @@ table tbody tr:last-child td {
 .badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 5px 14px;
+  min-width: 96px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
+  text-align: center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 .badge.up, .badge.success, .badge.approved { background: var(--success-soft); color: var(--success); border: 1px solid rgba(52,211,153,0.3); }
