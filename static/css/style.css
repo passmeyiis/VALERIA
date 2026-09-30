@@ -615,7 +615,7 @@ h1, h2, h3, h4, .font-display, .card-title {
 
 .card:has(table) .card-header,
 .card:has(.table-wrap) .card-header {
-  padding: 0 0 16px 0 !important;
+  padding: 4px 8px 20px 8px !important;
   margin-bottom: 0 !important;
   flex-shrink: 0;
 }
