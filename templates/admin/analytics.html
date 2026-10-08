@@ -173,7 +173,7 @@
   <section class="an-card">
     <div class="an-card-head">
       <h3>Revenue per segment sales</h3>
-      <p>Arahkan kursor ke batang untuk melihat nilai lengkap</p>
+      <p id="segmentSub">Arahkan kursor ke batang untuk melihat nilai lengkap</p>
     </div>
     <div class="an-chart" style="height: 340px;" id="segmentBlock">
       <canvas id="segmentChart" aria-label="Grafik revenue per segment sales"></canvas>
@@ -312,7 +312,7 @@
   function tokens() {
     const s = getComputedStyle(document.documentElement);
     const g = n => s.getPropertyValue(n).trim();
-    return { muted: g('--text-muted') || '#94a3b8', grid: g('--border') || 'rgba(255,255,255,0.07)', surface: g('--surface') || '#0E131F' };
+    return { text: g('--text') || '#F1F3F9', muted: g('--text-muted') || '#94a3b8', grid: g('--border') || 'rgba(255,255,255,0.07)', surface: g('--surface') || '#0E131F' };
   }
   const t = tokens();
   const charts = [];
@@ -362,32 +362,67 @@
     }));
   }
 
-  // Revenue per segment
+  // Revenue per segment: 10 teratas + "Lainnya", bar horizontal dengan nilai di ujung batang
   if (!segRev.length) {
     showEmpty('segmentBlock', 'Belum ada data revenue per segment.');
   } else {
+    const TOP_N = 10;
+    const sorted = segmentLabels.map((l, i) => ({ l: String(l), v: segRev[i] || 0 })).sort((a, b) => b.v - a.v);
+    const rows = sorted.slice(0, TOP_N);
+    const rest = sorted.slice(TOP_N);
+    if (rest.length) {
+      rows.push({ l: 'Lainnya (' + rest.length + ' segment)', v: rest.reduce((a, r) => a + r.v, 0), other: true });
+    }
+    $('segmentSub').textContent = rest.length
+      ? TOP_N + ' segment teratas, sisanya digabung jadi "Lainnya". Arahkan kursor untuk nilai lengkap.'
+      : 'Arahkan kursor ke batang untuk melihat nilai lengkap.';
+    $('segmentBlock').style.height = Math.max(220, rows.length * 44 + 40) + 'px';
+
+    const pctOf = v => totalRev ? v / totalRev * 100 : 0;
+    const valueLabels = {
+      id: 'valueLabels',
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx, k = tokens(), meta = chart.getDatasetMeta(0);
+        ctx.save();
+        ctx.font = "600 12px 'Inter', system-ui, sans-serif";
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = k.text;
+        meta.data.forEach((bar, i) => {
+          const p = pctOf(rows[i].v);
+          ctx.fillText(rpShort(rows[i].v) + '  ·  ' + nf(p, p < 1 ? 1 : 0) + '%', bar.x + 10, bar.y);
+        });
+        ctx.restore();
+      }
+    };
+
     charts.push(new Chart($('segmentChart').getContext('2d'), {
       type: 'bar',
-      data: { labels: segmentLabels, datasets: [{
-        data: segRev, borderRadius: 8, borderSkipped: false, maxBarThickness: 38,
+      plugins: [valueLabels],
+      data: { labels: rows.map(r => r.l), datasets: [{
+        data: rows.map(r => r.v), borderRadius: 8, borderSkipped: false, barThickness: 22,
         backgroundColor: function (ctx) {
-          const area = ctx.chart.chartArea;
-          if (!area) return '#A78BFA';
-          const g = ctx.chart.ctx.createLinearGradient(0, area.bottom, 0, area.top);
-          g.addColorStop(0, 'rgba(96, 165, 250, 0.85)');
+          if (rows[ctx.dataIndex] && rows[ctx.dataIndex].other) return 'rgba(148, 163, 184, 0.55)';
+          const a = ctx.chart.chartArea;
+          if (!a) return '#A78BFA';
+          const g = ctx.chart.ctx.createLinearGradient(a.left, 0, a.right, 0);
+          g.addColorStop(0, 'rgba(96, 165, 250, 0.9)');
           g.addColorStop(1, 'rgba(167, 139, 250, 0.95)');
           return g;
         } }] },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', axis: 'y', intersect: false },
+        layout: { padding: { right: 130 } },
         plugins: { legend: { display: false },
-                   tooltip: Object.assign({}, tip, { callbacks: { label: c => rpFull(c.raw) } }) },
+                   tooltip: Object.assign({}, tip, { callbacks: {
+                     title: items => rows[items[0].dataIndex].l,
+                     label: c => rpFull(c.raw) + ' (' + nf(pctOf(c.raw), 1) + '% dari total)' } }) },
         scales: {
-          x: { grid: { display: false },
-               ticks: { color: t.muted, maxRotation: 40, font: { size: 11 },
-                        callback: function (value) { const l = String(this.getLabelForValue(value)); return l.length > 16 ? l.slice(0, 15) + '…' : l; } } },
-          y: { beginAtZero: true, grid: { color: t.grid }, border: { display: false },
-               ticks: { color: t.muted, callback: axisShort, maxTicksLimit: 6 } }
+          x: { display: false, beginAtZero: true, grid: { color: t.grid }, ticks: { color: t.muted } },
+          y: { grid: { display: false }, border: { display: false },
+               ticks: { color: t.text, font: { size: 12.5 },
+                        callback: function (value) { const l = String(this.getLabelForValue(value)); return l.length > 30 ? l.slice(0, 29) + '…' : l; } } }
         }
       }
     }));
@@ -400,7 +435,7 @@
       const sc = ch.options.scales;
       if (sc) {
         if (sc.x && sc.x.ticks) sc.x.ticks.color = k.muted;
-        if (sc.y) { sc.y.ticks.color = k.muted; sc.y.grid.color = k.grid; }
+        if (sc.y) { sc.y.ticks.color = ch.options.indexAxis === 'y' ? k.text : k.muted; sc.y.grid.color = k.grid; }
       }
       ch.data.datasets.forEach(ds => {
         if (ch.config.type === 'doughnut') ds.borderColor = k.surface;
