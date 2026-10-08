@@ -309,10 +309,16 @@
   Chart.defaults.font.size = 12;
   Chart.defaults.animation = reduceMotion ? false : { duration: 700 };
 
+  let tokCache = null;
   function tokens() {
-    const s = getComputedStyle(document.documentElement);
-    const g = n => s.getPropertyValue(n).trim();
-    return { text: g('--text') || '#F1F3F9', muted: g('--text-muted') || '#94a3b8', grid: g('--border') || 'rgba(255,255,255,0.07)', surface: g('--surface') || '#0E131F' };
+    const key = document.documentElement.getAttribute('data-theme');
+    if (tokCache && tokCache.key === key) return tokCache.v;
+    const st = getComputedStyle(document.documentElement);
+    const g = n => st.getPropertyValue(n).trim();
+    const v = { text: g('--text') || '#F1F3F9', muted: g('--text-muted') || '#94a3b8',
+                grid: g('--border') || 'rgba(255,255,255,0.07)', surface: g('--surface') || '#0E131F' };
+    tokCache = { key: key, v: v };
+    return v;
   }
   const t = tokens();
   const charts = [];
@@ -331,15 +337,15 @@
       type: 'line',
       data: { labels: yearlyLabels, datasets: [{
         data: yearRev, borderColor: '#A78BFA', backgroundColor: grad, fill: true, tension: 0.4, borderWidth: 3,
-        pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#A78BFA', pointBorderColor: t.surface, pointBorderWidth: 2 }] },
+        pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#A78BFA', pointBorderColor: () => tokens().surface, pointBorderWidth: 2 }] },
       options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
         plugins: { legend: { display: false },
                    tooltip: Object.assign({}, tip, { callbacks: { title: i => 'Tahun ' + i[0].label, label: c => rpFull(c.raw) } }) },
         scales: {
-          x: { grid: { display: false }, ticks: { color: t.muted } },
-          y: { beginAtZero: true, grid: { color: t.grid }, border: { display: false },
-               ticks: { color: t.muted, callback: axisShort, maxTicksLimit: 6 } }
+          x: { grid: { display: false }, ticks: { color: () => tokens().muted } },
+          y: { beginAtZero: true, grid: { color: () => tokens().grid }, border: { display: false },
+               ticks: { color: () => tokens().muted, callback: axisShort, maxTicksLimit: 6 } }
         }
       }
     }));
@@ -353,7 +359,7 @@
       type: 'doughnut',
       data: { labels: orderLabels, datasets: [{
         data: ordCnt, backgroundColor: orderLabels.map((_, i) => PAL[i % PAL.length]),
-        borderColor: t.surface, borderWidth: 3, borderRadius: 6, hoverOffset: 6 }] },
+        borderColor: () => tokens().surface, borderWidth: 3, borderRadius: 6, hoverOffset: 6 }] },
       options: {
         responsive: true, maintainAspectRatio: false, cutout: '72%',
         plugins: { legend: { display: false },
@@ -419,32 +425,21 @@
                      title: items => rows[items[0].dataIndex].l,
                      label: c => rpFull(c.raw) + ' (' + nf(pctOf(c.raw), 1) + '% dari total)' } }) },
         scales: {
-          x: { display: false, beginAtZero: true, grid: { color: t.grid }, ticks: { color: t.muted } },
+          x: { display: false, beginAtZero: true, grid: { color: () => tokens().grid }, ticks: { color: () => tokens().muted } },
           y: { grid: { display: false }, border: { display: false },
-               ticks: { color: t.text, font: { size: 12.5 },
+               ticks: { color: () => tokens().text, font: { size: 12.5 },
                         callback: function (value) { const l = String(this.getLabelForValue(value)); return l.length > 30 ? l.slice(0, 29) + '…' : l; } } }
         }
       }
     }));
   }
 
-  // Ikuti tombol tema (light/dark)
-  function applyTheme() {
-    const k = tokens();
-    charts.forEach(ch => {
-      const sc = ch.options.scales;
-      if (sc) {
-        if (sc.x && sc.x.ticks) sc.x.ticks.color = k.muted;
-        if (sc.y) { sc.y.ticks.color = ch.options.indexAxis === 'y' ? k.text : k.muted; sc.y.grid.color = k.grid; }
-      }
-      ch.data.datasets.forEach(ds => {
-        if (ch.config.type === 'doughnut') ds.borderColor = k.surface;
-        if (ch.config.type === 'line') ds.pointBorderColor = k.surface;
-      });
-      ch.update('none');
-    });
-  }
-  new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  // Gambar ulang saat tema berubah (warna dibaca ulang dari tema aktif)
+  function repaint() { charts.forEach(ch => ch.update('none')); }
+  new MutationObserver(repaint).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  window.addEventListener('load', function () { setTimeout(repaint, 0); });
+  const themeBtn = document.getElementById('themeToggleBtn');
+  if (themeBtn) themeBtn.addEventListener('click', function () { setTimeout(repaint, 60); });
 })();
 </script>
 {% endblock %}
