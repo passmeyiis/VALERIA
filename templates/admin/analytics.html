@@ -1,234 +1,415 @@
 {% extends "shared/base.html" %}
+{% block title %}Analytics Dashboard{% endblock %}
+{% block page_title %}Analytics Dashboard{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <div>
-            <h2 class="fw-bold text-white mb-1"><i class="fas fa-chart-line text-danger me-2"></i>Executive Analytics Center</h2>
-            <p class="text-muted mb-0">Multi-Dimensional PostgreSQL Performance & Yearly Financial Breakdown</p>
+<style>
+  .an-wrap { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+  .an-wrap * { box-sizing: border-box; }
+
+  .an-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .an-head p { margin: 0; color: var(--text-muted); font-size: 14px; }
+  .an-live { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px;
+             background: var(--success-soft); color: var(--success); font-size: 12.5px; font-weight: 600; }
+  .an-live i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+  .an-grid { display: grid; gap: 20px; }
+  .an-grid > * { min-width: 0; }
+  .an-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .an-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .an-split-wide { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+
+  .an-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+             padding: 24px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); }
+  .an-card-head { margin-bottom: 20px; }
+  .an-card-head h3 { margin: 0; font-size: 17px; font-weight: 700; color: var(--text); }
+  .an-card-head p { margin: 4px 0 0; font-size: 13px; color: var(--text-muted); }
+
+  /* Stat cards */
+  .an-stat { display: flex; align-items: center; gap: 16px; background: var(--surface);
+             border: 1px solid var(--border); border-radius: 18px; padding: 20px 22px; }
+  .an-ico { flex: none; width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center;
+            color: var(--tone); background: color-mix(in srgb, var(--tone) 16%, transparent); }
+  .an-ico svg { width: 22px; height: 22px; }
+  .an-stat-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .an-stat-body strong { font-family: var(--font-display); font-size: clamp(20px, 1.9vw, 27px); line-height: 1.15;
+                         font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .an-stat-body span { font-size: 13.5px; color: var(--text); font-weight: 500; }
+  .an-stat-body small { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .an-up { color: var(--success) !important; }
+  .an-down { color: var(--danger) !important; }
+
+  /* Donut */
+  .an-donut { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+  .an-donut-chart { position: relative; width: 210px; height: 210px; flex: none; }
+  .an-donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+                     justify-content: center; pointer-events: none; }
+  .an-donut-center strong { font-family: var(--font-display); font-size: 30px; line-height: 1; color: var(--text); }
+  .an-donut-center span { margin-top: 6px; font-size: 12.5px; color: var(--text-muted); }
+  .an-legend { flex: 1; min-width: 190px; display: flex; flex-direction: column; gap: 12px; }
+  .an-legend-row { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text); }
+  .an-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+  .an-legend-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .an-legend-val { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+  /* Ranked list with progress */
+  .an-rank { display: flex; flex-direction: column; gap: 18px; }
+  .an-rank-top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; font-size: 13.5px; }
+  .an-rank-name { flex: 1; min-width: 0; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .an-rank-rev { color: var(--text); font-variant-numeric: tabular-nums; }
+  .an-rank-pct { width: 46px; text-align: right; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .an-track { height: 7px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .an-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #A78BFA, #F472B6); }
+
+  /* Growth list */
+  .an-years { display: flex; flex-direction: column; }
+  .an-year { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .an-year:last-child { border-bottom: none; padding-bottom: 0; }
+  .an-year:first-child { padding-top: 0; }
+  .an-year-label { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--text); width: 52px; }
+  .an-year-rev { flex: 1; color: var(--text-muted); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  .an-pill { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .an-pill.up { background: var(--success-soft); color: var(--success); }
+  .an-pill.down { background: var(--danger-soft); color: var(--danger); }
+  .an-pill.flat { background: var(--surface-2); color: var(--text-muted); }
+
+  .an-chart { position: relative; }
+  .an-empty { padding: 36px 0; text-align: center; color: var(--text-muted); font-size: 13.5px; }
+
+  @media (max-width: 1199px) { .an-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 991px)  { .an-split, .an-split-wide { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 575px)  { .an-wrap { padding: 16px; } .an-stats { grid-template-columns: minmax(0, 1fr); } .an-card { padding: 20px; } }
+</style>
+
+<div class="an-wrap">
+  <div class="an-head">
+    <p>Revenue tahunan, performa segment sales, dan komposisi jenis order dari database.</p>
+    <span class="an-live"><i></i>Database terhubung</span>
+  </div>
+
+  <!-- Ringkasan angka -->
+  <section class="an-grid an-stats">
+    <article class="an-stat" style="--tone:#A78BFA">
+      <div class="an-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3"/><path d="M21 10h-5a2 2 0 0 0 0 4h5z"/></svg></div>
+      <div class="an-stat-body">
+        <strong id="statTotalRev">Rp 0</strong>
+        <span>Total revenue</span>
+        <small id="statTotalRevSub">Semua segment</small>
+      </div>
+    </article>
+    <article class="an-stat" style="--tone:#F472B6">
+      <div class="an-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+      <div class="an-stat-body">
+        <strong id="statTotalOrders">0</strong>
+        <span>Total order</span>
+        <small id="statTotalOrdersSub">Semua jenis order</small>
+      </div>
+    </article>
+    <article class="an-stat" style="--tone:#60A5FA">
+      <div class="an-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+      <div class="an-stat-body">
+        <strong id="statTotalSeg">0</strong>
+        <span>Segment aktif</span>
+        <small id="statTopSeg">Belum ada data</small>
+      </div>
+    </article>
+    <article class="an-stat" style="--tone:#34D399">
+      <div class="an-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
+      <div class="an-stat-body">
+        <strong id="statGrowth">-</strong>
+        <span>Pertumbuhan tahunan</span>
+        <small id="statGrowthSub">Perlu data minimal 2 tahun</small>
+      </div>
+    </article>
+  </section>
+
+  <!-- Donut order + segment teratas -->
+  <section class="an-grid an-split">
+    <div class="an-card">
+      <div class="an-card-head">
+        <h3>Distribusi jenis order</h3>
+        <p>Porsi jumlah order per jenis</p>
+      </div>
+      <div class="an-donut" id="donutBlock">
+        <div class="an-donut-chart">
+          <canvas id="orderChart" aria-label="Grafik distribusi jenis order"></canvas>
+          <div class="an-donut-center"><strong id="donutTotal">0</strong><span>order</span></div>
         </div>
-        <div class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2 rounded-pill">
-            <i class="fas fa-circle fa-xs me-1"></i> Live Database Connected
-        </div>
+        <div class="an-legend" id="orderLegend"></div>
+      </div>
     </div>
 
-    <!-- Quick Metrics Row -->
-    <div class="row g-3 mb-4">
-        <div class="col-xl-6">
-            <div class="card bg-dark text-white border-secondary p-3 rounded-4 shadow-sm">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="text-white small text-uppercase fw-bold">Total Evaluated Revenue</span>
-                        <h3 class="fw-bold text-light mt-1 mb-0" id="statTotalRev">Rp 0</h3>
-                    </div>
-                    <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-circle">
-                        <i class="fas fa-coins fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-6">
-            <div class="card bg-dark text-white border-secondary p-3 rounded-4 shadow-sm">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="text-white small text-uppercase fw-bold">Active Segments Recorded</span>
-                        <h3 class="fw-bold text-light mt-1 mb-0" id="statTotalSeg">0 Segments</h3>
-                    </div>
-                    <div class="p-3 bg-info bg-opacity-10 text-info rounded-circle">
-                        <i class="fas fa-layer-group fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="an-card">
+      <div class="an-card-head">
+        <h3>Segment dengan revenue tertinggi</h3>
+        <p id="rankSub">Peringkat berdasarkan total revenue</p>
+      </div>
+      <div class="an-rank" id="rankList"></div>
+    </div>
+  </section>
+
+  <!-- Tren tahunan + pertumbuhan -->
+  <section class="an-grid an-split-wide">
+    <div class="an-card">
+      <div class="an-card-head">
+        <h3>Tren revenue tahunan</h3>
+        <p id="yearSub">Total revenue per tahun</p>
+      </div>
+      <div class="an-chart" style="height: 300px;" id="yearlyBlock">
+        <canvas id="yearlyChart" aria-label="Grafik tren revenue tahunan"></canvas>
+      </div>
     </div>
 
-    <!-- MAIN GRID CHARTS -->
-    <div class="row g-4 mb-4">
-        <!-- 1. Grafik Tren Tahunan (2024, 2025, 2026) -->
-        <div class="col-xl-12">
-            <div class="card bg-dark text-white border-secondary p-4 rounded-4 shadow">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="card-title fw-bold m-0 text-light"><i class="fas fa-calendar-alt text-warning me-2"></i>Tren Revenue Tahunan (2024 - 2026)</h5>
-                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning">Yearly Performance</span>
-                </div>
-                <div style="height: 300px; position: relative;">
-                    <canvas id="yearlyChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- 2. Grafik Revenue per Segment Sales -->
-        <div class="col-xl-8">
-            <div class="card bg-dark text-white border-secondary p-4 rounded-4 shadow h-100">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="card-title fw-bold m-0 text-light"><i class="fas fa-chart-bar text-danger me-2"></i>Revenue per Segment Sales</h5>
-                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger">Segment Breakdown</span>
-                </div>
-                <div style="height: 350px; position: relative;">
-                    <canvas id="segmentChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. Grafik Jenis Order -->
-        <div class="col-xl-4">
-            <div class="card bg-dark text-white border-secondary p-4 shadow h-100">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="card-title fw-bold m-0 text-light"><i class="fas fa-pie-chart text-info me-2"></i>Distribusi Jenis Order</h5>
-                    <span class="badge bg-info bg-opacity-10 text-info border border-info">Order Share</span>
-                </div>
-                <div style="height: 350px; position: relative;">
-                    <canvas id="orderChart"></canvas>
-                </div>
-            </div>
-        </div>
+    <div class="an-card">
+      <div class="an-card-head">
+        <h3>Perubahan dari tahun sebelumnya</h3>
+        <p>Dibandingkan revenue tahun lalu</p>
+      </div>
+      <div class="an-years" id="yearList"></div>
     </div>
+  </section>
+
+  <!-- Revenue per segment -->
+  <section class="an-card">
+    <div class="an-card-head">
+      <h3>Revenue per segment sales</h3>
+      <p>Arahkan kursor ke batang untuk melihat nilai lengkap</p>
+    </div>
+    <div class="an-chart" style="height: 340px;" id="segmentBlock">
+      <canvas id="segmentChart" aria-label="Grafik revenue per segment sales"></canvas>
+    </div>
+  </section>
 </div>
 
-<!-- Import Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const segmentLabels = {{ segment_labels | tojson }};
-    const segmentRevenues = {{ segment_revenues | tojson }};
-    const orderLabels = {{ order_labels | tojson }};
-    const orderCounts = {{ order_counts | tojson }};
-    const yearlyLabels = {{ yearly_labels | tojson }};
-    const yearlyRevenues = {{ yearly_revenues | tojson }};
+(function () {
+  // ---- Data dari backend (nama variabel tidak berubah) ----
+  const segmentLabels  = {{ segment_labels  | tojson }} || [];
+  const segmentRevenues = {{ segment_revenues | tojson }} || [];
+  const orderLabels    = {{ order_labels    | tojson }} || [];
+  const orderCounts    = {{ order_counts    | tojson }} || [];
+  const yearlyLabels   = {{ yearly_labels   | tojson }} || [];
+  const yearlyRevenues = {{ yearly_revenues | tojson }} || [];
 
-    const totalRev = segmentRevenues.reduce((a, b) => a + (parseFloat(b) || 0), 0);
-    document.getElementById('statTotalRev').innerText = 'Rp ' + totalRev.toLocaleString('id-ID');
-    document.getElementById('statTotalSeg').innerText = segmentRevenues.length + ' Active';
+  const toNum = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+  const segRev  = segmentRevenues.map(toNum);
+  const ordCnt  = orderCounts.map(toNum);
+  const yearRev = yearlyRevenues.map(toNum);
 
-    // --- 1. Grafik Tren Tahunan ---
-    const ctxYearly = document.getElementById('yearlyChart').getContext('2d');
-    const yearlyGradient = ctxYearly.createLinearGradient(0, 0, 0, 300);
-    yearlyGradient.addColorStop(0, 'rgba(245, 158, 11, 0.4)');
-    yearlyGradient.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+  // ---- Helper format & DOM ----
+  const $ = id => document.getElementById(id);
+  const nf = (n, d) => n.toLocaleString('id-ID', { maximumFractionDigits: d == null ? 1 : d });
+  function axisShort(v) {
+    const a = Math.abs(v);
+    if (a >= 1e12) return nf(v / 1e12, 2) + ' T';
+    if (a >= 1e9)  return nf(v / 1e9, 2) + ' M';
+    if (a >= 1e6)  return nf(v / 1e6, 1) + ' Jt';
+    return nf(v, 0);
+  }
+  const rpShort = v => 'Rp ' + axisShort(v);
+  const rpFull  = v => 'Rp ' + Math.round(v).toLocaleString('id-ID');
+  function h(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function showEmpty(containerId, msg) {
+    const c = $(containerId);
+    c.replaceChildren(h('div', 'an-empty', msg));
+  }
 
-    new Chart(ctxYearly, {
-        type: 'line',
-        data: {
-            labels: yearlyLabels,
-            datasets: [{
-                label: 'Revenue Tahunan',
-                data: yearlyRevenues,
-                backgroundColor: yearlyGradient,
-                borderColor: '#f59e0b',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.35,
-                pointBackgroundColor: '#f59e0b',
-                pointRadius: 6,
-                pointHoverRadius: 8
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    padding: 12,
-                    callbacks: {
-                        label: function(context) {
-                            return ' Total Revenue: Rp ' + (context.raw || 0).toLocaleString('id-ID');
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
-                y: { 
-                    ticks: { 
-                        color: '#94a3b8',
-                        callback: function(value) {
-                            if (value >= 1000000000) return (value / 1000000000).toFixed(1) + ' M';
-                            if (value >= 1000000) return (value / 1000000).toFixed(1) + ' Jt';
-                            return value;
-                        }
-                    },
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                }
-            }
-        }
+  const PAL = ['#A78BFA', '#60A5FA', '#F472B6', '#FBBF24', '#34D399', '#E11D3C', '#38BDF8', '#94A3B8'];
+
+  // ---- Kartu ringkasan ----
+  const totalRev = segRev.reduce((a, b) => a + b, 0);
+  const totalOrders = ordCnt.reduce((a, b) => a + b, 0);
+  $('statTotalRev').textContent = rpShort(totalRev);
+  $('statTotalRev').title = rpFull(totalRev);
+  $('statTotalRevSub').textContent = 'Dari ' + segRev.length + ' segment';
+  $('statTotalOrders').textContent = nf(totalOrders, 0);
+  $('statTotalOrdersSub').textContent = orderLabels.length + ' jenis order';
+  $('statTotalSeg').textContent = segRev.length;
+  if (segRev.length) {
+    const topIdx = segRev.indexOf(Math.max.apply(null, segRev));
+    $('statTopSeg').textContent = 'Tertinggi: ' + segmentLabels[topIdx];
+  }
+  if (yearRev.length >= 2) {
+    const last = yearRev[yearRev.length - 1], prev = yearRev[yearRev.length - 2];
+    const lastL = yearlyLabels[yearRev.length - 1], prevL = yearlyLabels[yearRev.length - 2];
+    if (prev > 0) {
+      const g = (last - prev) / prev * 100;
+      const el = $('statGrowth');
+      el.textContent = (g >= 0 ? '+' : '') + nf(g, 1) + '%';
+      el.classList.add(g >= 0 ? 'an-up' : 'an-down');
+      $('statGrowthSub').textContent = prevL + ' ke ' + lastL;
+    }
+  }
+
+  // ---- Legenda donut ----
+  $('donutTotal').textContent = nf(totalOrders, 0);
+  const legend = $('orderLegend');
+  if (!ordCnt.length) {
+    legend.appendChild(h('div', 'an-empty', 'Belum ada data order.'));
+  }
+  orderLabels.forEach((lbl, i) => {
+    const pct = totalOrders ? ordCnt[i] / totalOrders * 100 : 0;
+    const row = h('div', 'an-legend-row');
+    const dot = h('span', 'an-dot'); dot.style.background = PAL[i % PAL.length];
+    row.append(dot, h('span', 'an-legend-name', lbl), h('span', 'an-legend-val', nf(ordCnt[i], 0) + ' · ' + nf(pct, 0) + '%'));
+    legend.appendChild(row);
+  });
+
+  // ---- Peringkat segment ----
+  const ranked = segmentLabels.map((l, i) => ({ l: l, v: segRev[i] || 0 })).sort((a, b) => b.v - a.v).slice(0, 6);
+  const rankList = $('rankList');
+  if (!ranked.length) {
+    rankList.appendChild(h('div', 'an-empty', 'Belum ada data segment.'));
+  } else {
+    $('rankSub').textContent = ranked.length + ' teratas dari ' + segRev.length + ' segment';
+    const max = ranked[0].v || 1;
+    ranked.forEach(r => {
+      const item = h('div');
+      const top = h('div', 'an-rank-top');
+      top.append(h('span', 'an-rank-name', r.l), h('span', 'an-rank-rev', rpShort(r.v)),
+                 h('span', 'an-rank-pct', nf(totalRev ? r.v / totalRev * 100 : 0, 0) + '%'));
+      const track = h('div', 'an-track');
+      const fill = h('div', 'an-fill'); fill.style.width = Math.max(2, r.v / max * 100) + '%';
+      track.appendChild(fill);
+      item.append(top, track);
+      rankList.appendChild(item);
     });
+  }
 
-    // --- 2. Grafik Segment Sales ---
-    const ctxSegment = document.getElementById('segmentChart').getContext('2d');
-    new Chart(ctxSegment, {
-        type: 'bar',
-        data: {
-            labels: segmentLabels,
-            datasets: [{
-                label: 'Revenue',
-                data: segmentRevenues,
-                backgroundColor: 'rgba(220, 53, 69, 0.8)',
-                borderColor: '#dc3545',
-                borderWidth: 1,
-                borderRadius: 6,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    callbacks: {
-                        label: function(context) {
-                            return ' Revenue: Rp ' + (context.raw || 0).toLocaleString('id-ID');
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
-                y: { 
-                    ticks: { 
-                        color: '#94a3b8',
-                        callback: function(value) {
-                            if (value >= 1000000000) return (value / 1000000000).toFixed(1) + ' M';
-                            if (value >= 1000000) return (value / 1000000).toFixed(1) + ' Jt';
-                            return value;
-                        }
-                    },
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                }
-            }
-        }
-    });
+  // ---- Daftar perubahan tahunan ----
+  const yearList = $('yearList');
+  if (!yearRev.length) {
+    yearList.appendChild(h('div', 'an-empty', 'Belum ada data tahunan.'));
+  } else {
+    $('yearSub').textContent = 'Total revenue ' + yearlyLabels[0] + (yearRev.length > 1 ? ' sampai ' + yearlyLabels[yearRev.length - 1] : '');
+    for (let i = yearRev.length - 1; i >= 0; i--) {
+      const row = h('div', 'an-year');
+      let pill;
+      if (i === 0 || yearRev[i - 1] <= 0) {
+        pill = h('span', 'an-pill flat', i === 0 ? 'Tahun awal' : '-');
+      } else {
+        const g = (yearRev[i] - yearRev[i - 1]) / yearRev[i - 1] * 100;
+        pill = h('span', 'an-pill ' + (g > 0 ? 'up' : g < 0 ? 'down' : 'flat'), (g > 0 ? '+' : '') + nf(g, 1) + '%');
+      }
+      row.append(h('span', 'an-year-label', String(yearlyLabels[i])), h('span', 'an-year-rev', rpShort(yearRev[i])), pill);
+      yearList.appendChild(row);
+    }
+  }
 
-    // --- 3. Grafik Jenis Order ---
-    const ctxOrder = document.getElementById('orderChart').getContext('2d');
-    new Chart(ctxOrder, {
-        type: 'doughnut',
-        data: {
-            labels: orderLabels,
-            datasets: [{
-                data: orderCounts,
-                backgroundColor: ['#dc3545', '#0ea5e9', '#eab308', '#8b5cf6', '#10b981', '#64748b'],
-                borderWidth: 2,
-                borderColor: '#1e293b'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-                legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10 } },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    callbacks: {
-                        label: function(context) {
-                            return ` ${context.label}: ${context.raw} Orders`;
-                        }
-                    }
-                }
-            }
+  // ---- Chart.js ----
+  if (!window.Chart) return;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.animation = reduceMotion ? false : { duration: 700 };
+
+  function tokens() {
+    const s = getComputedStyle(document.documentElement);
+    const g = n => s.getPropertyValue(n).trim();
+    return { muted: g('--text-muted') || '#94a3b8', grid: g('--border') || 'rgba(255,255,255,0.07)', surface: g('--surface') || '#0E131F' };
+  }
+  const t = tokens();
+  const charts = [];
+  const tip = { backgroundColor: '#0F172A', titleColor: '#E2E8F0', bodyColor: '#E2E8F0',
+                borderColor: 'rgba(148,158,232,0.25)', borderWidth: 1, padding: 12, cornerRadius: 10, displayColors: false };
+
+  // Tren tahunan
+  if (!yearRev.length) {
+    showEmpty('yearlyBlock', 'Belum ada data revenue tahunan.');
+  } else {
+    const yctx = $('yearlyChart').getContext('2d');
+    const grad = yctx.createLinearGradient(0, 0, 0, 300);
+    grad.addColorStop(0, 'rgba(167, 139, 250, 0.5)');
+    grad.addColorStop(1, 'rgba(167, 139, 250, 0)');
+    charts.push(new Chart(yctx, {
+      type: 'line',
+      data: { labels: yearlyLabels, datasets: [{
+        data: yearRev, borderColor: '#A78BFA', backgroundColor: grad, fill: true, tension: 0.4, borderWidth: 3,
+        pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#A78BFA', pointBorderColor: t.surface, pointBorderWidth: 2 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false },
+                   tooltip: Object.assign({}, tip, { callbacks: { title: i => 'Tahun ' + i[0].label, label: c => rpFull(c.raw) } }) },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: t.muted } },
+          y: { beginAtZero: true, grid: { color: t.grid }, border: { display: false },
+               ticks: { color: t.muted, callback: axisShort, maxTicksLimit: 6 } }
         }
+      }
+    }));
+  }
+
+  // Donut jenis order
+  if (!ordCnt.length) {
+    $('orderChart').parentElement.style.display = 'none';
+  } else {
+    charts.push(new Chart($('orderChart').getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: orderLabels, datasets: [{
+        data: ordCnt, backgroundColor: orderLabels.map((_, i) => PAL[i % PAL.length]),
+        borderColor: t.surface, borderWidth: 3, borderRadius: 6, hoverOffset: 6 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '72%',
+        plugins: { legend: { display: false },
+                   tooltip: Object.assign({}, tip, { callbacks: { label: c => ' ' + c.label + ': ' + nf(c.raw, 0) + ' order' } }) }
+      }
+    }));
+  }
+
+  // Revenue per segment
+  if (!segRev.length) {
+    showEmpty('segmentBlock', 'Belum ada data revenue per segment.');
+  } else {
+    charts.push(new Chart($('segmentChart').getContext('2d'), {
+      type: 'bar',
+      data: { labels: segmentLabels, datasets: [{
+        data: segRev, borderRadius: 8, borderSkipped: false, maxBarThickness: 38,
+        backgroundColor: function (ctx) {
+          const area = ctx.chart.chartArea;
+          if (!area) return '#A78BFA';
+          const g = ctx.chart.ctx.createLinearGradient(0, area.bottom, 0, area.top);
+          g.addColorStop(0, 'rgba(96, 165, 250, 0.85)');
+          g.addColorStop(1, 'rgba(167, 139, 250, 0.95)');
+          return g;
+        } }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false },
+                   tooltip: Object.assign({}, tip, { callbacks: { label: c => rpFull(c.raw) } }) },
+        scales: {
+          x: { grid: { display: false },
+               ticks: { color: t.muted, maxRotation: 40, font: { size: 11 },
+                        callback: function (value) { const l = String(this.getLabelForValue(value)); return l.length > 16 ? l.slice(0, 15) + '…' : l; } } },
+          y: { beginAtZero: true, grid: { color: t.grid }, border: { display: false },
+               ticks: { color: t.muted, callback: axisShort, maxTicksLimit: 6 } }
+        }
+      }
+    }));
+  }
+
+  // Ikuti tombol tema (light/dark)
+  function applyTheme() {
+    const k = tokens();
+    charts.forEach(ch => {
+      const sc = ch.options.scales;
+      if (sc) {
+        if (sc.x && sc.x.ticks) sc.x.ticks.color = k.muted;
+        if (sc.y) { sc.y.ticks.color = k.muted; sc.y.grid.color = k.grid; }
+      }
+      ch.data.datasets.forEach(ds => {
+        if (ch.config.type === 'doughnut') ds.borderColor = k.surface;
+        if (ch.config.type === 'line') ds.pointBorderColor = k.surface;
+      });
+      ch.update('none');
     });
+  }
+  new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+})();
 </script>
 {% endblock %}
