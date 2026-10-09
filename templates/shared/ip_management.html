@@ -75,7 +75,7 @@
 {% endif %}
 
 <div class="card" style="margin-bottom: 20px;">
-    <!-- TOOLBAR ATAS (Tanpa Filter, ada Search & Download PDF) -->
+    <!-- TOOLBAR ATAS -->
     <div class="card-header" style="flex-wrap: wrap; gap: 12px; align-items: center;">
         <div>
             <p class="card-title">Daftar Seluruh Data IP</p>
@@ -362,12 +362,19 @@
     </div>
 </div>
 
-<!-- CSS KHUSUS CETAK PDF -->
+<!-- CSS KHUSUS CETAK PDF LANDSCAPE -->
 <style>
     @media print {
+        @page {
+            size: landscape;
+            margin: 10mm;
+        }
+
         body {
             background: white !important;
-            color: black !important;
+            color: #111 !important;
+            font-family: Arial, sans-serif !important;
+            -webkit-print-color-adjust: exact;
         }
 
         .no-print,
@@ -375,7 +382,10 @@
         aside,
         .sidebar,
         nav,
-        button {
+        button,
+        #printable-summary,
+        .card-header input,
+        .card-header button {
             display: none !important;
         }
 
@@ -386,22 +396,55 @@
             padding: 0 !important;
         }
 
+        .card-title {
+            font-size: 16px !important;
+            font-weight: bold !important;
+            color: #000 !important;
+            margin-bottom: 4px !important;
+        }
+
+        .card-desc {
+            font-size: 11px !important;
+            color: #555 !important;
+            margin-bottom: 10px !important;
+        }
+
+        .table-wrap {
+            overflow: visible !important;
+        }
+
         table {
             width: 100% !important;
             border-collapse: collapse !important;
+            margin-top: 5px !important;
         }
 
-        th,
-        td {
-            border: 1px solid #ddd !important;
+        th {
+            background-color: #f2f2f2 !important;
+            color: #000 !important;
+            border: 1px solid #bbb !important;
             padding: 6px 8px !important;
             font-size: 11px !important;
-            color: black !important;
+            text-align: left !important;
+        }
+
+        td {
+            border: 1px solid #ddd !important;
+            padding: 5px 8px !important;
+            font-size: 10px !important;
+            color: #333 !important;
+        }
+
+        .badge {
+            border: 1px solid #999 !important;
+            padding: 2px 5px !important;
+            font-size: 9px !important;
+            font-weight: bold !important;
         }
     }
 </style>
 
-<!-- SCRIPT JAVASCRIPT UNTUK SEARCH, PAGING & DOWNLOAD PDF -->
+<!-- SCRIPT JAVASCRIPT -->
 <script>
     let currentPage = 1;
     const rowsPerPage = 10;
@@ -484,14 +527,12 @@
     }
 
     function downloadPDF() {
-        // Tampilkan semua baris sementara agar masuk ke dokumen PDF secara utuh
         let table = document.getElementById("ipTableEntries");
         let allTr = Array.from(table.getElementsByClassName("ip-row"));
         allTr.forEach(tr => tr.style.display = "");
 
         window.print();
 
-        // Kembalikan ke tampilan paginasi semula setelah dialog print ditutup
         renderTable();
     }
 
