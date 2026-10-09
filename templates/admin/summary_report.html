@@ -59,53 +59,65 @@
         </div>
     </div>
 
-    <!-- SECTION 2: TABEL MATRIKS DETAIL SUMBER -->
-    <div class="card p-4 rounded-4 shadow">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+    <!-- SECTION 2: TABEL MATRIKS DETAIL (format sama dengan IP Management) -->
+    <div class="card">
+        <div class="card-header">
             <div>
-                <h4 class="fw-bold mb-1"><i class="fas fa-table text-danger me-2"></i>Matriks Detail Sumber Data ({{
-                    tahun }})</h4>
-                <p class="text-muted small mb-0">Daftar project tahun {{ tahun }} yang tercatat di database.</p>
+                <p class="card-title">Matriks Detail Sumber Data ({{ tahun }})</p>
+                <p class="card-desc">Daftar project tahun {{ tahun }} yang tercatat di database ({{ table_rows | length
+                    }} entri)</p>
             </div>
-            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2">Data Project</span>
+            <!-- KOTAK SEARCH -->
+            <div>
+                <input type="text" id="searchMatrixInput" placeholder="Cari project..." onkeyup="filterMatrixTable()"
+                    style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text);">
+            </div>
         </div>
 
-        <div class="table-responsive" style="max-height: 550px; overflow-y: auto;">
-            <table class="table table-hover mb-0 align-middle text-nowrap"
-                style="font-size: 13px; border-collapse: collapse;">
+        <div class="table-wrap">
+            <table id="summaryMatrixTable">
                 {% if table_columns %}
-                <thead style="position: sticky; top: 0; z-index: 1;">
+                <thead>
                     <tr>
                         {% for col in table_columns %}
-                        <th class="py-3 px-3 text-nowrap"
-                            style="background-color: var(--surface-2); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-strong);">
-                            {{ col | replace('_', ' ') }}</th>
+                        <th>{{ col | replace('_', ' ') }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
                 {% endif %}
                 <tbody>
                     {% for row in table_rows %}
-                    <tr style="transition: background 0.2s;" onmouseover="this.style.background='var(--surface-hover)'"
-                        onmouseout="this.style.background='transparent'">
+                    <tr>
                         {% for cell in row %}
-                        <td class="py-3 px-3 {% if loop.index0 == 0 %}fw-bold text-danger{% endif %}"
-                            style="border-bottom: 1px solid var(--border);">
-                            {{ cell if cell is not none and cell != 'nan' else '-' }}
-                        </td>
-                        {% endfor %}
+                        <td{% if loop.index0==0 %} class="ip-cell" {% endif %}>{{ cell if cell is not none and cell !=
+                            'nan' else '-' }}</td>
+                            {% endfor %}
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="20" class="text-center py-5" style="color: var(--text-muted);">
-                            <i class="fas fa-folder-open fa-2x mb-3 d-block" style="opacity: 0.4;"></i>
-                            Belum ada data project untuk tahun {{ tahun }}.
-                        </td>
+                        <td colspan="{{ table_columns | length or 1 }}"
+                            style="text-align: center; color: var(--text-faint); padding: 20px;">Belum ada data project
+                            untuk tahun {{ tahun }}.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+
+    <script>
+        function filterMatrixTable() {
+            let filter = document.getElementById("searchMatrixInput").value.toLowerCase();
+            let tr = document.getElementById("summaryMatrixTable").getElementsByTagName("tr");
+            for (let i = 1; i < tr.length; i++) {
+                let td = tr[i].getElementsByTagName("td");
+                let found = false;
+                for (let j = 0; j < td.length; j++) {
+                    if (td[j].textContent.toLowerCase().indexOf(filter) > -1) { found = true; break; }
+                }
+                tr[i].style.display = found ? "" : "none";
+            }
+        }
+    </script>
 </div>
 {% endblock %}
