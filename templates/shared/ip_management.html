@@ -171,7 +171,7 @@
         </table>
     </div>
 
-    <!-- KOMPONEN PAGING DENGAN IKON PANAH -->
+    <!-- KOMPONEN PAGING DENGAN IKON PANAH (NEXT WARNA MERAH) -->
     <div class="no-print"
         style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted);">
         <div id="tableInfo">Menampilkan data...</div>
@@ -509,8 +509,19 @@
         document.getElementById("tableInfo").innerText = infoText;
         document.getElementById("pageIndicator").innerText = `Halaman ${currentPage} dari ${totalPages}`;
 
-        document.getElementById("prevBtn").disabled = currentPage === 1;
-        document.getElementById("nextBtn").disabled = currentPage === totalPages || totalPages === 0;
+        let prevBtn = document.getElementById("prevBtn");
+        let nextBtn = document.getElementById("nextBtn");
+
+        prevBtn.disabled = currentPage === 1;
+
+        // Logika tombol Next warna merah jika aktif
+        if (currentPage === totalPages || totalPages === 0) {
+            nextBtn.disabled = true;
+            nextBtn.className = "btn btn-secondary btn-sm";
+        } else {
+            nextBtn.disabled = false;
+            nextBtn.className = "btn btn-primary btn-sm";
+        }
 
         let emptyRow = document.getElementById("empty-row");
         if (emptyRow) {
