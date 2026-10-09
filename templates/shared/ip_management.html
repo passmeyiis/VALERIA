@@ -5,14 +5,14 @@
 {% block content %}
 
 {% if ip_summary %}
-<div class="card" style="margin-bottom: 20px;">
+<div class="card" style="margin-bottom: 20px;" id="printable-summary">
     <div class="card-header">
         <div>
             <p class="card-title">Ringkasan Ketersediaan IP</p>
             <p class="card-desc">Total Keseluruhan Data IP dalam Sistem ({{ ip_summary.total }} entri)</p>
         </div>
         {% if session.role in ['admin', 'superadmin'] %}
-        <button class="btn btn-primary btn-sm"
+        <button class="btn btn-primary btn-sm no-print"
             onclick="document.getElementById('modal-tambah-ip').classList.add('open')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round" width="16" height="16">
@@ -75,7 +75,7 @@
 {% endif %}
 
 <div class="card" style="margin-bottom: 20px;">
-    <!-- TOOLBAR ATAS (Mengikuti Referensi Gambar: Filter, Search dengan Tombol, & Download Data) -->
+    <!-- TOOLBAR ATAS (Tanpa Filter, ada Search & Download PDF) -->
     <div class="card-header" style="flex-wrap: wrap; gap: 12px; align-items: center;">
         <div>
             <p class="card-title">Daftar Seluruh Data IP</p>
@@ -83,15 +83,6 @@
         </div>
 
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <!-- Tombol Filter -->
-            <button class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 6px;"
-                onclick="toggleFilterOptions()">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                </svg>
-                Filter IP List
-            </button>
-
             <!-- Kotak Search & Tombol Search -->
             <div style="display: flex; gap: 4px;">
                 <input type="text" id="searchIpInput" placeholder="Cari IP, layanan, lokasi..."
@@ -100,15 +91,17 @@
                 <button class="btn btn-primary btn-sm" onclick="filterIpTable()">Search</button>
             </div>
 
-            <!-- Tombol Download Data -->
+            <!-- Tombol Download PDF -->
             <button class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 6px;"
-                onclick="downloadTableData()">
+                onclick="downloadPDF()">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" />
                 </svg>
-                Download IP Data
+                Download PDF
             </button>
         </div>
     </div>
@@ -125,7 +118,7 @@
                     <th>PIC Request</th>
                     <th>Tgl Request</th>
                     <th>VLAN</th>
-                    <th>Aksi</th>
+                    <th class="no-print">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -142,7 +135,7 @@
                     <td>{{ e.pic_req or '-' }}</td>
                     <td>{{ e.tgl_req.strftime('%d %b %Y') if e.tgl_req else '-' }}</td>
                     <td>{{ e.vlan_id or '-' }}</td>
-                    <td>
+                    <td class="no-print">
                         {% if session.role in ['admin', 'superadmin'] %}
                         <button class="btn btn-secondary btn-sm" onclick='openEditModal({
                             id: {{ e.id }},
@@ -178,16 +171,27 @@
         </table>
     </div>
 
-    <!-- KOMPONEN PAGING (Paginasi Tabel) -->
-    <div
+    <!-- KOMPONEN PAGING DENGAN IKON PANAH -->
+    <div class="no-print"
         style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted);">
         <div id="tableInfo">Menampilkan data...</div>
-        <div style="display: flex; gap: 6px; align-items: center;" id="paginationControls">
-            <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage - 1)"
-                id="prevBtn">Sebelumnya</button>
-            <span id="pageIndicator" style="padding: 0 8px; font-weight: 600; color: var(--text);">Halaman 1</span>
-            <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage + 1)"
-                id="nextBtn">Selanjutnya</button>
+        <div style="display: flex; gap: 8px; align-items: center;" id="paginationControls">
+            <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage - 1)" id="prevBtn"
+                title="Sebelumnya"
+                style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+            </button>
+            <span id="pageIndicator" style="padding: 0 8px; font-weight: 600; color: var(--text);">Halaman 1 dari
+                1</span>
+            <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage + 1)" id="nextBtn"
+                title="Selanjutnya"
+                style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6" />
+                </svg>
+            </button>
         </div>
     </div>
 </div>
@@ -358,7 +362,46 @@
     </div>
 </div>
 
-<!-- SCRIPT JAVASCRIPT UNTUK SEARCH, FILTER, PAGING & DOWNLOAD -->
+<!-- CSS KHUSUS CETAK PDF -->
+<style>
+    @media print {
+        body {
+            background: white !important;
+            color: black !important;
+        }
+
+        .no-print,
+        header,
+        aside,
+        .sidebar,
+        nav,
+        button {
+            display: none !important;
+        }
+
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd !important;
+            padding: 6px 8px !important;
+            font-size: 11px !important;
+            color: black !important;
+        }
+    }
+</style>
+
+<!-- SCRIPT JAVASCRIPT UNTUK SEARCH, PAGING & DOWNLOAD PDF -->
 <script>
     let currentPage = 1;
     const rowsPerPage = 10;
@@ -376,11 +419,7 @@
     }
 
     function handleSearchKeyup(event) {
-        if (event.key === 'Enter') {
-            filterIpTable();
-        } else {
-            filterIpTable();
-        }
+        filterIpTable();
     }
 
     function filterIpTable() {
@@ -409,7 +448,6 @@
         let table = document.getElementById("ipTableEntries");
         let allTr = Array.from(table.getElementsByClassName("ip-row"));
 
-        // Sembunyikan semua baris terlebih dahulu
         allTr.forEach(tr => tr.style.display = "none");
 
         let totalRows = filteredRows.length;
@@ -422,19 +460,15 @@
         let end = start + rowsPerPage;
         let pageRows = filteredRows.slice(start, end);
 
-        // Tampilkan baris untuk halaman aktif
         pageRows.forEach(tr => tr.style.display = "");
 
-        // Info teks bawah
         let infoText = totalRows === 0 ? "Tidak ada data yang ditemukan" : `Menampilkan ${start + 1} - ${Math.min(end, totalRows)} dari ${totalRows} data`;
         document.getElementById("tableInfo").innerText = infoText;
         document.getElementById("pageIndicator").innerText = `Halaman ${currentPage} dari ${totalPages}`;
 
-        // Status tombol pagination
         document.getElementById("prevBtn").disabled = currentPage === 1;
         document.getElementById("nextBtn").disabled = currentPage === totalPages || totalPages === 0;
 
-        // Handle pesan kosong
         let emptyRow = document.getElementById("empty-row");
         if (emptyRow) {
             emptyRow.style.display = totalRows === 0 ? "" : "none";
@@ -449,38 +483,16 @@
         }
     }
 
-    function toggleFilterOptions() {
-        alert("Fitur filter lanjutan aktif. Gunakan kolom pencarian untuk menyaring data dengan cepat.");
-    }
+    function downloadPDF() {
+        // Tampilkan semua baris sementara agar masuk ke dokumen PDF secara utuh
+        let table = document.getElementById("ipTableEntries");
+        let allTr = Array.from(table.getElementsByClassName("ip-row"));
+        allTr.forEach(tr => tr.style.display = "");
 
-    function downloadTableData() {
-        let csv = [];
-        let rows = document.querySelectorAll("#ipTableEntries tr");
+        window.print();
 
-        for (let i = 0; i < rows.length; i++) {
-            // Hanya ambil baris yang terlihat
-            if (rows[i].style.display !== "none") {
-                let row = [], cols = rows[i].querySelectorAll("td, th");
-                for (let j = 0; j < cols.length - 1; j++) {
-                    row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
-                }
-                csv.push(row.join(","));
-            }
-        }
-
-        if (csv.length === 0) {
-            alert("Tidak ada data untuk diunduh!");
-            return;
-        }
-
-        let csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
-        let downloadLink = document.createElement("a");
-        downloadLink.download = "IP_Management_Data.csv";
-        downloadLink.href = window.URL.createObjectURL(csvFile);
-        downloadLink.style.display = "none";
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+        // Kembalikan ke tampilan paginasi semula setelah dialog print ditutup
+        renderTable();
     }
 
     function openEditModal(data) {
