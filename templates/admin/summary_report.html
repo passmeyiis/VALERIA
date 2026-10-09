@@ -7,21 +7,10 @@
         <div>
             <h2 class="fw-bold mb-2"><i class="fas fa-chart-bar text-danger me-2"></i>Executive Financial Summary {{
                 tahun }}</h2>
-            <p class="text-muted mb-0">Analisis dan rekapitulasi data dari file report ITND.</p>
+            <p class="text-muted mb-0">Rekapitulasi revenue dan jumlah project per tahun dari database.</p>
         </div>
 
         <div class="d-flex align-items-center gap-3 flex-wrap">
-            <!-- Form Upload Excel Manual -->
-            <form action="{{ url_for('admin.upload_report') }}" method="POST" enctype="multipart/form-data"
-                class="d-flex align-items-center gap-2">
-                <input type="file" name="report_file" class="form-control form-control-sm" accept=".xlsx, .xls" required
-                    style="max-width: 220px;">
-                <button type="submit" class="btn btn-sm px-3 py-2 fw-bold rounded-pill shadow-sm text-nowrap"
-                    style="background-color: var(--primary); color: #fff; border: none;">
-                    <i class="fas fa-upload me-1"></i> Update Excel
-                </button>
-            </form>
-
             <!-- Switch Button Tahun -->
             <div class="d-flex p-1 rounded-pill shadow-sm"
                 style="background-color: var(--surface-2); border: 1px solid var(--border-strong); gap: 4px;">
@@ -76,10 +65,9 @@
             <div>
                 <h4 class="fw-bold mb-1"><i class="fas fa-table text-danger me-2"></i>Matriks Detail Sumber Data ({{
                     tahun }})</h4>
-                <p class="text-muted small mb-0">Data rekapitulasi yang dimuat langsung dari file laporan Excel.</p>
+                <p class="text-muted small mb-0">Daftar project tahun {{ tahun }} yang tercatat di database.</p>
             </div>
-            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2">Excel Source
-                Table</span>
+            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2">Data Project</span>
         </div>
 
         <div class="table-responsive" style="max-height: 550px; overflow-y: auto;">
@@ -111,9 +99,7 @@
                     <tr>
                         <td colspan="20" class="text-center py-5" style="color: var(--text-muted);">
                             <i class="fas fa-folder-open fa-2x mb-3 d-block" style="opacity: 0.4;"></i>
-                            Belum ada file Excel "report ITND.xlsx" yang di-upload atau datanya kosong.<br>
-                            <span style="font-size: 12px;">Silakan klik tombol **"Update Excel"** di atas untuk
-                                mengunggah laporan terbaru.</span>
+                            Belum ada data project untuk tahun {{ tahun }}.
                         </td>
                     </tr>
                     {% endfor %}
