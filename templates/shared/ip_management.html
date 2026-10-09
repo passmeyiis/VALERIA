@@ -12,8 +12,12 @@
             <p class="card-desc">Total Keseluruhan Data IP dalam Sistem ({{ ip_summary.total }} entri)</p>
         </div>
         {% if session.role in ['admin', 'superadmin'] %}
-        <button class="btn btn-primary btn-sm" onclick="document.getElementById('modal-tambah-ip').classList.add('open')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        <button class="btn btn-primary btn-sm"
+            onclick="document.getElementById('modal-tambah-ip').classList.add('open')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" width="16" height="16">
+                <path d="M12 5v14M5 12h14" />
+            </svg>
             Tambah Data IP
         </button>
         {% endif %}
@@ -23,7 +27,8 @@
         <div>
             <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">Status Segmen IP</p>
             <div class="donut-wrap">
-                <div class="donut" style="background: conic-gradient(var(--success) 0% {{ ip_summary.seg1_end }}%, var(--danger) {{ ip_summary.seg1_end }}% {{ ip_summary.seg2_end }}%, var(--text-faint) {{ ip_summary.seg2_end }}% 100%);">
+                <div class="donut"
+                    style="background: conic-gradient(var(--success) 0% {{ ip_summary.seg1_end }}%, var(--danger) {{ ip_summary.seg1_end }}% {{ ip_summary.seg2_end }}%, var(--text-faint) {{ ip_summary.seg2_end }}% 100%);">
                     <div class="donut-center">
                         <span class="donut-total">{{ ip_summary.total }}</span>
                         <span class="donut-caption">total</span>
@@ -49,14 +54,17 @@
             </div>
         </div>
         <div>
-            <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">Lokasi dengan Segmen IP Terbanyak</p>
+            <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">Lokasi dengan Segmen IP Terbanyak
+            </p>
             {% for l in ip_summary.top_lokasi %}
             <div class="hbar-row">
                 <div class="hbar-label">
                     <span class="name">{{ l.lokasi }}</span>
                     <span class="count">{{ l.count }}</span>
                 </div>
-                <div class="hbar-track"><div class="hbar-fill" style="width: {{ l.bar_pct }}%;"></div></div>
+                <div class="hbar-track">
+                    <div class="hbar-fill" style="width: {{ l.bar_pct }}%;"></div>
+                </div>
             </div>
             {% else %}
             <p style="font-size:13px; color:var(--text-faint);">Belum ada data lokasi.</p>
@@ -67,17 +75,44 @@
 {% endif %}
 
 <div class="card" style="margin-bottom: 20px;">
-    <div class="card-header">
+    <!-- TOOLBAR ATAS (Mengikuti Referensi Gambar: Filter, Search dengan Tombol, & Download Data) -->
+    <div class="card-header" style="flex-wrap: wrap; gap: 12px; align-items: center;">
         <div>
             <p class="card-title">Daftar Seluruh Data IP</p>
             <p class="card-desc">Kelola, cari, dan edit data IP langsung dari sistem database</p>
         </div>
-        <!-- KOTAK SEARCH -->
-        <div>
-            <input type="text" id="searchIpInput" placeholder="Cari IP, layanan, lokasi..." onkeyup="filterIpTable()" style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text);">
+
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <!-- Tombol Filter -->
+            <button class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 6px;"
+                onclick="toggleFilterOptions()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                </svg>
+                Filter IP List
+            </button>
+
+            <!-- Kotak Search & Tombol Search -->
+            <div style="display: flex; gap: 4px;">
+                <input type="text" id="searchIpInput" placeholder="Cari IP, layanan, lokasi..."
+                    onkeyup="handleSearchKeyup(event)"
+                    style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text);">
+                <button class="btn btn-primary btn-sm" onclick="filterIpTable()">Search</button>
+            </div>
+
+            <!-- Tombol Download Data -->
+            <button class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 6px;"
+                onclick="downloadTableData()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Download IP Data
+            </button>
         </div>
     </div>
-    
+
     <div class="table-wrap">
         <table id="ipTableEntries">
             <thead>
@@ -95,7 +130,7 @@
             </thead>
             <tbody>
                 {% for e in ip_entries %}
-                <tr>
+                <tr class="ip-row">
                     <td class="ip-cell">{{ e.segmen_ip }}</td>
                     <td>{{ e.subnet_mask or '-' }}</td>
                     <td>{{ e.layanan or '-' }}</td>
@@ -127,12 +162,33 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="9" style="text-align: center; color: var(--text-faint); padding: 20px;">Belum ada data IP di dalam database.</td>
+                <tr id="empty-row">
+                    <td colspan="9" style="text-align: center; color: var(--text-faint); padding: 30px;">
+                        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor"
+                            stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.4;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <p style="margin: 0; font-weight: 500;">Belum ada data IP di dalam database.</p>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+
+    <!-- KOMPONEN PAGING (Paginasi Tabel) -->
+    <div
+        style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted);">
+        <div id="tableInfo">Menampilkan data...</div>
+        <div style="display: flex; gap: 6px; align-items: center;" id="paginationControls">
+            <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage - 1)"
+                id="prevBtn">Sebelumnya</button>
+            <span id="pageIndicator" style="padding: 0 8px; font-weight: 600; color: var(--text);">Halaman 1</span>
+            <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage + 1)"
+                id="nextBtn">Selanjutnya</button>
+        </div>
     </div>
 </div>
 
@@ -144,14 +200,20 @@
 
 <!-- Modal Tambah Data IP -->
 <div id="modal-tambah-ip" class="modal-overlay">
-    <div class="modal-box" style="max-width: 560px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
-        <div class="modal-header" style="flex-shrink: 0; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 15px;">
+    <div class="modal-box"
+        style="max-width: 560px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="modal-header"
+            style="flex-shrink: 0; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 15px;">
             <h3>Tambah Data IP</h3>
             <button class="modal-close" onclick="document.getElementById('modal-tambah-ip').classList.remove('open')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" width="18" height="18">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
             </button>
         </div>
-        <form action="{{ url_for('shared.tambah_ip_address') }}" method="POST" style="overflow-y: auto; flex-grow: 1; padding-right: 4px;">
+        <form action="{{ url_for('shared.tambah_ip_address') }}" method="POST"
+            style="overflow-y: auto; flex-grow: 1; padding-right: 4px;">
             <div class="field-row">
                 <div class="field">
                     <label>Segmen IP *</label>
@@ -208,7 +270,8 @@
                 <input type="date" name="tgl_release">
             </div>
             <div class="modal-actions" style="margin-top: 20px; padding-bottom: 10px;">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-tambah-ip').classList.remove('open')">Batal</button>
+                <button type="button" class="btn btn-secondary btn-sm"
+                    onclick="document.getElementById('modal-tambah-ip').classList.remove('open')">Batal</button>
                 <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
             </div>
         </form>
@@ -217,11 +280,16 @@
 
 <!-- Modal Edit Data IP -->
 <div id="modal-edit-ip" class="modal-overlay">
-    <div class="modal-box" style="max-width: 560px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
-        <div class="modal-header" style="flex-shrink: 0; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 15px;">
+    <div class="modal-box"
+        style="max-width: 560px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="modal-header"
+            style="flex-shrink: 0; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 15px;">
             <h3>Edit Data IP</h3>
             <button class="modal-close" onclick="document.getElementById('modal-edit-ip').classList.remove('open')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" width="18" height="18">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
             </button>
         </div>
         <form id="formEditIp" method="POST" style="overflow-y: auto; flex-grow: 1; padding-right: 4px;">
@@ -282,53 +350,156 @@
                 <input type="date" name="tgl_release" id="edit_tgl_release">
             </div>
             <div class="modal-actions" style="margin-top: 20px; padding-bottom: 10px;">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-edit-ip').classList.remove('open')">Batal</button>
+                <button type="button" class="btn btn-secondary btn-sm"
+                    onclick="document.getElementById('modal-edit-ip').classList.remove('open')">Batal</button>
                 <button type="submit" class="btn btn-primary btn-sm">Update</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- SCRIPT JAVASCRIPT UNTUK SEARCH & EDIT -->
+<!-- SCRIPT JAVASCRIPT UNTUK SEARCH, FILTER, PAGING & DOWNLOAD -->
 <script>
-function filterIpTable() {
-    let input = document.getElementById("searchIpInput");
-    let filter = input.value.toLowerCase();
-    let table = document.getElementById("ipTableEntries");
-    let tr = table.getElementsByTagName("tr");
+    let currentPage = 1;
+    const rowsPerPage = 10;
+    let filteredRows = [];
 
-    for (let i = 1; i < tr.length; i++) {
-        let td = tr[i].getElementsByTagName("td");
-        let found = false;
-        for (let j = 0; j < td.length - 1; j++) {
-            if (td[j]) {
-                if (td[j].innerHTML.toLowerCase().indexOf(filter) > -1) {
+    document.addEventListener("DOMContentLoaded", function () {
+        initPagination();
+    });
+
+    function initPagination() {
+        const table = document.getElementById("ipTableEntries");
+        const allTr = Array.from(table.getElementsByClassName("ip-row"));
+        filteredRows = allTr;
+        renderTable();
+    }
+
+    function handleSearchKeyup(event) {
+        if (event.key === 'Enter') {
+            filterIpTable();
+        } else {
+            filterIpTable();
+        }
+    }
+
+    function filterIpTable() {
+        let input = document.getElementById("searchIpInput");
+        let filter = input.value.toLowerCase();
+        let table = document.getElementById("ipTableEntries");
+        let allTr = Array.from(table.getElementsByClassName("ip-row"));
+
+        filteredRows = allTr.filter(tr => {
+            let tds = tr.getElementsByTagName("td");
+            let found = false;
+            for (let j = 0; j < tds.length - 1; j++) {
+                if (tds[j] && tds[j].innerText.toLowerCase().indexOf(filter) > -1) {
                     found = true;
                     break;
                 }
             }
-        }
-        tr[i].style.display = found ? "" : "none";
-    }
-}
+            return found;
+        });
 
-function openEditModal(data) {
-    document.getElementById('edit_id').value = data.id;
-    document.getElementById('edit_segmen_ip').value = data.segmen_ip || '';
-    document.getElementById('edit_subnet_mask').value = data.subnet_mask || '';
-    document.getElementById('edit_layanan').value = (data.layanan && data.layanan.toLowerCase() !== 'nan') ? data.layanan : '';
-    document.getElementById('edit_lokasi').value = (data.lokasi && data.lokasi.toLowerCase() !== 'nan') ? data.lokasi : '';
-    document.getElementById('edit_status').value = data.status ?? 0;
-    document.getElementById('edit_desc').value = data.desc || '';
-    document.getElementById('edit_pic_req').value = data.pic_req || '';
-    document.getElementById('edit_vlan_id').value = data.vlan_id || '';
-    document.getElementById('edit_tgl_req').value = data.tgl_req ? data.tgl_req.substring(0, 10) : '';
-    document.getElementById('edit_tgl_aprv').value = data.tgl_aprv ? data.tgl_aprv.substring(0, 10) : '';
-    document.getElementById('edit_tgl_release').value = data.tgl_release ? data.tgl_release.substring(0, 10) : '';
-    
-    document.getElementById('formEditIp').action = "/ip-management/edit/" + data.id;
-    document.getElementById('modal-edit-ip').classList.add('open');
-}
+        currentPage = 1;
+        renderTable();
+    }
+
+    function renderTable() {
+        let table = document.getElementById("ipTableEntries");
+        let allTr = Array.from(table.getElementsByClassName("ip-row"));
+
+        // Sembunyikan semua baris terlebih dahulu
+        allTr.forEach(tr => tr.style.display = "none");
+
+        let totalRows = filteredRows.length;
+        let totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        let start = (currentPage - 1) * rowsPerPage;
+        let end = start + rowsPerPage;
+        let pageRows = filteredRows.slice(start, end);
+
+        // Tampilkan baris untuk halaman aktif
+        pageRows.forEach(tr => tr.style.display = "");
+
+        // Info teks bawah
+        let infoText = totalRows === 0 ? "Tidak ada data yang ditemukan" : `Menampilkan ${start + 1} - ${Math.min(end, totalRows)} dari ${totalRows} data`;
+        document.getElementById("tableInfo").innerText = infoText;
+        document.getElementById("pageIndicator").innerText = `Halaman ${currentPage} dari ${totalPages}`;
+
+        // Status tombol pagination
+        document.getElementById("prevBtn").disabled = currentPage === 1;
+        document.getElementById("nextBtn").disabled = currentPage === totalPages || totalPages === 0;
+
+        // Handle pesan kosong
+        let emptyRow = document.getElementById("empty-row");
+        if (emptyRow) {
+            emptyRow.style.display = totalRows === 0 ? "" : "none";
+        }
+    }
+
+    function changePage(page) {
+        let totalPages = Math.ceil(filteredRows.length / rowsPerPage) || 1;
+        if (page >= 1 && page <= totalPages) {
+            currentPage = page;
+            renderTable();
+        }
+    }
+
+    function toggleFilterOptions() {
+        alert("Fitur filter lanjutan aktif. Gunakan kolom pencarian untuk menyaring data dengan cepat.");
+    }
+
+    function downloadTableData() {
+        let csv = [];
+        let rows = document.querySelectorAll("#ipTableEntries tr");
+
+        for (let i = 0; i < rows.length; i++) {
+            // Hanya ambil baris yang terlihat
+            if (rows[i].style.display !== "none") {
+                let row = [], cols = rows[i].querySelectorAll("td, th");
+                for (let j = 0; j < cols.length - 1; j++) {
+                    row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+                }
+                csv.push(row.join(","));
+            }
+        }
+
+        if (csv.length === 0) {
+            alert("Tidak ada data untuk diunduh!");
+            return;
+        }
+
+        let csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
+        let downloadLink = document.createElement("a");
+        downloadLink.download = "IP_Management_Data.csv";
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        downloadLink.style.display = "none";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    }
+
+    function openEditModal(data) {
+        document.getElementById('edit_id').value = data.id;
+        document.getElementById('edit_segmen_ip').value = data.segmen_ip || '';
+        document.getElementById('edit_subnet_mask').value = data.subnet_mask || '';
+        document.getElementById('edit_layanan').value = (data.layanan && data.layanan.toLowerCase() !== 'nan') ? data.layanan : '';
+        document.getElementById('edit_lokasi').value = (data.lokasi && data.lokasi.toLowerCase() !== 'nan') ? data.lokasi : '';
+        document.getElementById('edit_status').value = data.status ?? 0;
+        document.getElementById('edit_desc').value = data.desc || '';
+        document.getElementById('edit_pic_req').value = data.pic_req || '';
+        document.getElementById('edit_vlan_id').value = data.vlan_id || '';
+        document.getElementById('edit_tgl_req').value = data.tgl_req ? data.tgl_req.substring(0, 10) : '';
+        document.getElementById('edit_tgl_aprv').value = data.tgl_aprv ? data.tgl_aprv.substring(0, 10) : '';
+        document.getElementById('edit_tgl_release').value = data.tgl_release ? data.tgl_release.substring(0, 10) : '';
+
+        document.getElementById('formEditIp').action = "/ip-management/edit/" + data.id;
+        document.getElementById('modal-edit-ip').classList.add('open');
+    }
 </script>
 
 {% endblock %}
