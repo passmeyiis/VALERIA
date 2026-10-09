@@ -3,14 +3,14 @@
 {% block page_title %}Daftar Projects{% endblock %}
 
 {% block content %}
-<div class="card" style="margin-bottom: 20px;">
+<div class="card" style="margin-bottom: 20px;" id="printable-summary">
     <div class="card-header">
         <div>
             <p class="card-title"><i class="fas fa-project-diagram text-danger me-2"></i>Daftar Projects</p>
             <p class="card-desc">Keseluruhan data project dan segment sales dari database ({{ projects | length }}
                 entri)</p>
         </div>
-        <div>
+        <div class="no-print">
             <a href="{{ url_for('admin.add_project') }}" class="btn btn-primary btn-sm">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round" style="width: 14px; height: 14px;">
@@ -23,14 +23,34 @@
 </div>
 
 <div class="card" style="margin-bottom: 20px;">
-    <div class="card-header">
+    <!-- TOOLBAR ATAS (Search & Download PDF) -->
+    <div class="card-header" style="flex-wrap: wrap; gap: 12px; align-items: center;">
         <div>
             <p class="card-title">Daftar Seluruh Data Project</p>
             <p class="card-desc">Kelola, cari, dan edit data project langsung dari sistem database</p>
         </div>
-        <div>
-            <input type="text" id="searchProjectInput" placeholder="Cari data project..." onkeyup="filterProjectTable()"
-                style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text);">
+
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;" class="no-print">
+            <!-- Kotak Search & Tombol Search -->
+            <div style="display: flex; gap: 4px;">
+                <input type="text" id="searchProjectInput" placeholder="Cari data project..."
+                    onkeyup="handleSearchKeyup(event)"
+                    style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text);">
+                <button class="btn btn-primary btn-sm" onclick="filterProjectTable()">Search</button>
+            </div>
+
+            <!-- Tombol Download PDF -->
+            <button class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 6px;"
+                onclick="downloadPDF()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" />
+                </svg>
+                Download PDF
+            </button>
         </div>
     </div>
 
@@ -42,7 +62,7 @@
                     {% for key in projects[0].keys() %}
                     <th>{{ key | replace('_', ' ') | title }}</th>
                     {% endfor %}
-                    <th>Aksi</th>
+                    <th class="no-print">Aksi</th>
                     {% else %}
                     <th>Data Projects Kosong</th>
                     {% endif %}
@@ -50,7 +70,7 @@
             </thead>
             <tbody>
                 {% for row in projects %}
-                <tr>
+                <tr class="project-row">
                     {% for key, val in row.items() %}
                     <td>
                         {% if 'revenue' in key.lower() and val and val != '-' %}
@@ -65,42 +85,218 @@
                         {% endif %}
                     </td>
                     {% endfor %}
-                    <td>
+                    <td class="no-print">
                         <a href="{{ url_for('admin.edit_project', id=row.id) }}"
                             class="btn btn-secondary btn-sm">Edit</a>
                     </td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="25" style="text-align: center; color: var(--text-faint); padding: 20px;">Belum ada data
-                        projects di dalam database.</td>
+                <tr id="empty-row">
+                    <td colspan="25" style="text-align: center; color: var(--text-faint); padding: 30px;">
+                        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor"
+                            stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.4;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <p style="margin: 0; font-weight: 500;">Belum ada data projects di dalam database.</p>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+
+    <!-- KOMPONEN PAGING DENGAN IKON PANAH -->
+    <div class="no-print"
+        style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted);">
+        <div id="tableInfo">Menampilkan data...</div>
+        <div style="display: flex; gap: 8px; align-items: center;" id="paginationControls">
+            <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage - 1)" id="prevBtn"
+                title="Sebelumnya"
+                style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+            </button>
+            <span id="pageIndicator" style="padding: 0 8px; font-weight: 600; color: var(--text);">Halaman 1 dari
+                1</span>
+            <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage + 1)" id="nextBtn"
+                title="Selanjutnya"
+                style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6" />
+                </svg>
+            </button>
+        </div>
+    </div>
 </div>
 
+<!-- CSS KHUSUS CETAK PDF LANDSCAPE -->
+<style>
+    @media print {
+        @page {
+            size: landscape;
+            margin: 10mm;
+        }
+
+        body {
+            background: white !important;
+            color: #111 !important;
+            font-family: Arial, sans-serif !important;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .no-print,
+        header,
+        aside,
+        .sidebar,
+        nav,
+        button,
+        #printable-summary,
+        .card-header input,
+        .card-header button {
+            display: none !important;
+        }
+
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .card-title {
+            font-size: 16px !important;
+            font-weight: bold !important;
+            color: #000 !important;
+            margin-bottom: 4px !important;
+        }
+
+        .card-desc {
+            font-size: 11px !important;
+            color: #555 !important;
+            margin-bottom: 10px !important;
+        }
+
+        .table-wrap {
+            overflow: visible !important;
+        }
+
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin-top: 5px !important;
+        }
+
+        th {
+            background-color: #f2f2f2 !important;
+            color: #000 !important;
+            border: 1px solid #bbb !important;
+            padding: 6px 8px !important;
+            font-size: 10px !important;
+            text-align: left !important;
+        }
+
+        td {
+            border: 1px solid #ddd !important;
+            padding: 5px 8px !important;
+            font-size: 9.5px !important;
+            color: #333 !important;
+        }
+    }
+</style>
+
+<!-- SCRIPT JAVASCRIPT UNTUK SEARCH, PAGING & PDF -->
 <script>
+    let currentPage = 1;
+    const rowsPerPage = 10;
+    let filteredRows = [];
+
+    document.addEventListener("DOMContentLoaded", function () {
+        initPagination();
+    });
+
+    function initPagination() {
+        const table = document.getElementById("projectTableEntries");
+        const allTr = Array.from(table.getElementsByClassName("project-row"));
+        filteredRows = allTr;
+        renderTable();
+    }
+
+    function handleSearchKeyup(event) {
+        filterProjectTable();
+    }
+
     function filterProjectTable() {
         let input = document.getElementById("searchProjectInput");
         let filter = input.value.toLowerCase();
         let table = document.getElementById("projectTableEntries");
-        let tr = table.getElementsByTagName("tr");
+        let allTr = Array.from(table.getElementsByClassName("project-row"));
 
-        for (let i = 1; i < tr.length; i++) {
-            let td = tr[i].getElementsByTagName("td");
+        filteredRows = allTr.filter(tr => {
+            let tds = tr.getElementsByTagName("td");
             let found = false;
-            for (let j = 0; j < td.length - 1; j++) {
-                if (td[j]) {
-                    if (td[j].innerHTML.toLowerCase().indexOf(filter) > -1) {
-                        found = true;
-                        break;
-                    }
+            for (let j = 0; j < tds.length - 1; j++) {
+                if (tds[j] && tds[j].innerText.toLowerCase().indexOf(filter) > -1) {
+                    found = true;
+                    break;
                 }
             }
-            tr[i].style.display = found ? "" : "none";
+            return found;
+        });
+
+        currentPage = 1;
+        renderTable();
+    }
+
+    function renderTable() {
+        let table = document.getElementById("projectTableEntries");
+        let allTr = Array.from(table.getElementsByClassName("project-row"));
+
+        allTr.forEach(tr => tr.style.display = "none");
+
+        let totalRows = filteredRows.length;
+        let totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        let start = (currentPage - 1) * rowsPerPage;
+        let end = start + rowsPerPage;
+        let pageRows = filteredRows.slice(start, end);
+
+        pageRows.forEach(tr => tr.style.display = "");
+
+        let infoText = totalRows === 0 ? "Tidak ada data yang ditemukan" : `Menampilkan ${start + 1} - ${Math.min(end, totalRows)} dari ${totalRows} data`;
+        document.getElementById("tableInfo").innerText = infoText;
+        document.getElementById("pageIndicator").innerText = `Halaman ${currentPage} dari ${totalPages}`;
+
+        document.getElementById("prevBtn").disabled = currentPage === 1;
+        document.getElementById("nextBtn").disabled = currentPage === totalPages || totalPages === 0;
+
+        let emptyRow = document.getElementById("empty-row");
+        if (emptyRow) {
+            emptyRow.style.display = totalRows === 0 ? "" : "none";
         }
+    }
+
+    function changePage(page) {
+        let totalPages = Math.ceil(filteredRows.length / rowsPerPage) || 1;
+        if (page >= 1 && page <= totalPages) {
+            currentPage = page;
+            renderTable();
+        }
+    }
+
+    function downloadPDF() {
+        let table = document.getElementById("projectTableEntries");
+        let allTr = Array.from(table.getElementsByClassName("project-row"));
+        allTr.forEach(tr => tr.style.display = "");
+
+        window.print();
+
+        renderTable();
     }
 </script>
 {% endblock %}
