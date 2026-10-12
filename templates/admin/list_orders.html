@@ -1,314 +1,377 @@
 {% extends "shared/base.html" %}
 {% block title %}Daftar Orders{% endblock %}
 {% block page_title %}Daftar Orders{% endblock %}
-
 {% block content %}
-<div class="card" style="margin-bottom: 20px;" id="printable-summary">
-    <div class="card-header">
-        <div>
-            <p class="card-title"><i class="fas fa-shopping-bag text-danger me-2"></i>Daftar Orders</p>
-            <p class="card-desc">Keseluruhan data order, client, dan dokumen BA dari database ({{ orders | length }}
-                entri)</p>
-        </div>
-        <div class="no-print">
-            <a href="{{ url_for('admin.add_order') }}" class="btn btn-primary btn-sm">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" style="width: 14px; height: 14px;">
-                    <path d="M12 5v14M5 12h14" />
-                </svg>
-                Tambah Order
-            </a>
-        </div>
-    </div>
-</div>
-
-<div class="card" style="margin-bottom: 20px;">
-    <!-- TOOLBAR ATAS (Search & Download PDF) -->
-    <div class="card-header" style="flex-wrap: wrap; gap: 12px; align-items: center;">
-        <div>
-            <p class="card-title">Daftar Seluruh Data Order</p>
-            <p class="card-desc">Kelola, cari, dan edit data order langsung dari sistem database</p>
-        </div>
-
-        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;" class="no-print">
-            <!-- Kotak Search & Tombol Search -->
-            <div style="display: flex; gap: 4px;">
-                <input type="text" id="searchOrderInput" placeholder="Cari data order..."
-                    onkeyup="handleSearchKeyup(event)"
-                    style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text);">
-                <button class="btn btn-primary btn-sm" onclick="filterOrderTable()">Search</button>
-            </div>
-
-            <!-- Tombol Download PDF -->
-            <button class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 6px;"
-                onclick="downloadPDF()">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="16" y1="13" x2="8" y2="13" />
-                    <line x1="16" y1="17" x2="8" y2="17" />
-                    <polyline points="10 9 9 9 8 9" />
-                </svg>
-                Download PDF
-            </button>
-        </div>
-    </div>
-
-    <div class="table-wrap">
-        <table id="orderTableEntries">
-            <thead>
-                <tr>
-                    {% if orders and orders[0] %}
-                    {% for key in orders[0].keys() %}
-                    <th>{{ key | replace('_', ' ') | title }}</th>
-                    {% endfor %}
-                    <th class="no-print">Aksi</th>
-                    {% else %}
-                    <th>Data Orders Kosong</th>
-                    {% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in orders %}
-                <tr class="order-row">
-                    {% for key, val in row.items() %}
-                    <td>
-                        {% if ('file ba' in key.lower() or 'file_ba' in key.lower()) and val and val != '-' %}
-                        <a href="{{ val if (val | string).startswith('http') else url_for('static', filename='uploads/' + (val | string)) }}"
-                            target="_blank" class="badge up" style="text-decoration: none;">Lihat Dokumen</a>
-                        {% elif ('harga' in key.lower() or 'nilai' in key.lower()) and val and val != '-' %}
-                        {% set clean_val = val | string | replace('.0', '') %}
-                        {% if clean_val.isdigit() %}
-                        Rp {{ "{:,}".format(clean_val | int).replace(',', '.') }}
-                        {% else %}
-                        {{ val }}
-                        {% endif %}
-                        {% else %}
-                        {{ val if val is not none else '-' }}
-                        {% endif %}
-                    </td>
-                    {% endfor %}
-                    <td class="no-print">
-                        <a href="{{ url_for('admin.edit_order', id=row.id) }}" class="btn btn-secondary btn-sm">Edit</a>
-                    </td>
-                </tr>
-                {% else %}
-                <tr id="empty-row">
-                    <td colspan="25" style="text-align: center; color: var(--text-faint); padding: 30px;">
-                        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor"
-                            stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.4;">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" />
-                            <line x1="12" y1="3" x2="12" y2="15" />
-                        </svg>
-                        <p style="margin: 0; font-weight: 500;">Belum ada data orders di dalam database.</p>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- KOMPONEN PAGING DENGAN IKON PANAH (NEXT WARNA MERAH) -->
-    <div class="no-print"
-        style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted);">
-        <div id="tableInfo">Menampilkan data...</div>
-        <div style="display: flex; gap: 8px; align-items: center;" id="paginationControls">
-            <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage - 1)" id="prevBtn"
-                title="Sebelumnya"
-                style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="15 18 9 12 15 6" />
-                </svg>
-            </button>
-            <span id="pageIndicator" style="padding: 0 8px; font-weight: 600; color: var(--text);">Halaman 1 dari
-                1</span>
-            <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage + 1)" id="nextBtn"
-                title="Selanjutnya"
-                style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6" />
-                </svg>
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- CSS KHUSUS CETAK PDF LANDSCAPE -->
+{% set sample = (orders[0] if orders else {}) %}
 <style>
-    @media print {
-        @page {
-            size: landscape;
-            margin: 10mm;
-        }
+    /* Tabel: padding lega + lebar minimum kolom */
+    #orderTable th,
+    #orderTable td {
+        padding: 20px 24px !important;
+    }
 
-        body {
-            background: white !important;
-            color: #111 !important;
-            font-family: Arial, sans-serif !important;
-            -webkit-print-color-adjust: exact;
-        }
+    #orderTable td.pm-wide {
+        min-width: 240px;
+    }
 
-        .no-print,
-        header,
-        aside,
-        .sidebar,
-        nav,
-        button,
-        #printable-summary,
-        .card-header input,
-        .card-header button {
-            display: none !important;
-        }
+    #orderTable td.pm-num {
+        min-width: 150px;
+    }
 
-        .card {
-            border: none !important;
-            box-shadow: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
+    #orderTable td.pm-std {
+        min-width: 120px;
+    }
 
-        .card-title {
-            font-size: 16px !important;
-            font-weight: bold !important;
-            color: #000 !important;
-            margin-bottom: 4px !important;
-        }
+    .pm-edit-btn {
+        background: rgba(240, 136, 62, 0.15);
+        color: #f0883e;
+        border: 1px solid rgba(240, 136, 62, 0.4);
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
 
-        .card-desc {
-            font-size: 11px !important;
-            color: #555 !important;
-            margin-bottom: 10px !important;
-        }
+    .pm-edit-btn:hover {
+        background: rgba(240, 136, 62, 0.25);
+    }
 
-        .table-wrap {
-            overflow: visible !important;
-        }
+    /* Modal Tambah / Edit */
+    .pm-modal .modal-box {
+        max-width: 860px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+    }
 
-        table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            margin-top: 5px !important;
-        }
+    .pm-modal.pm-add .modal-box {
+        max-width: 640px;
+    }
 
-        th {
-            background-color: #f2f2f2 !important;
-            color: #000 !important;
-            border: 1px solid #bbb !important;
-            padding: 6px 8px !important;
-            font-size: 10px !important;
-            text-align: left !important;
-        }
+    .pm-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 18px;
+    }
 
-        td {
-            border: 1px solid #ddd !important;
-            padding: 5px 8px !important;
-            font-size: 9.5px !important;
-            color: #333 !important;
+    .pm-grid .field {
+        margin-bottom: 16px;
+    }
+
+    .pm-grid .full {
+        grid-column: 1 / -1;
+    }
+
+    .pm-grid textarea {
+        resize: vertical;
+        min-height: 76px;
+    }
+
+    .pm-hint {
+        margin: -6px 0 18px;
+        font-size: 12.5px;
+        color: var(--text-muted);
+    }
+
+    .pm-modal div.modal-actions.pm-flat {
+        position: sticky;
+        bottom: -28px;
+        margin: 8px -28px -28px;
+        padding: 16px 28px;
+        background: var(--surface) !important;
+        border-color: transparent !important;
+        border-top: 1px solid var(--border) !important;
+    }
+
+    @media (max-width: 640px) {
+        .pm-grid {
+            grid-template-columns: minmax(0, 1fr);
         }
     }
 </style>
 
-<!-- SCRIPT JAVASCRIPT -->
-<script>
-    let currentPage = 1;
-    const rowsPerPage = 10;
-    let filteredRows = [];
+<div class="container-fluid" style="padding-top: 24px; padding-bottom: 24px; padding-left: 24px; padding-right: 24px;">
+    <!-- Header dengan Tombol di Kanan -->
+    <div class="card p-4 rounded-4 shadow mb-4">
+        <div
+            style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h2 class="fw-bold mb-1"><i class="fas fa-shopping-bag text-danger me-2"></i>Daftar Orders</h2>
+                <p style="color: var(--text-muted); font-size: 14px; margin: 0 0 8px 0;">Keseluruhan data order, client,
+                    dan dokumen BA dari database</p>
+                <div
+                    style="display: inline-block; background: var(--primary-soft); color: var(--primary); border: 1px solid var(--primary-border); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                    Total: {{ orders | length }} Data
+                </div>
+            </div>
 
-    document.addEventListener("DOMContentLoaded", function () {
-        initPagination();
+            <!-- Tombol Tambah Order (buka pop-up) -->
+            <div>
+                <span>
+                    <button type="button" class="btn btn-primary" style="border-radius: 999px; padding: 10px 22px;"
+                        onclick="openAddModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                            stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Tambah Order
+                    </button>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kotak Input Search -->
+    <div style="margin-bottom: 20px;">
+        <div style="position: relative; max-width: 350px;">
+            <span
+                style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" style="width: 16px; height: 16px;">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </span>
+            <input type="text" id="searchInput" placeholder="Cari data order..."
+                style="width: 100%; background-color: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; padding: 10px 14px 10px 40px; color: var(--text); font-size: 13px; outline: none; transition: border-color 0.2s;"
+                onfocus="this.style.borderColor='var(--primary)'"
+                onblur="this.style.borderColor='var(--border-strong)'">
+        </div>
+    </div>
+
+    <!-- Tabel Data -->
+    <div class="card p-4 rounded-4 shadow">
+        <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+            <table id="orderTable" class="table table-hover align-middle mb-0" style="font-size: 14px;">
+                <thead class="sticky-top" style="z-index: 1;">
+                    <tr>
+                        {% if orders and orders[0] %}
+                        {% for key in orders[0].keys() %}
+                        <th class="text-nowrap" data-key="{{ key }}">{{ key | replace('_', ' ') | title }}</th>
+                        {% endfor %}
+                        <th class="text-center text-nowrap">Aksi</th>
+                        {% else %}
+                        <th>Data Kosong</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in orders %}
+                    <tr>
+                        {% for key, val in row.items() %}
+                        {% set k = key.lower() %}
+                        {% if 'dasar' in k or 'keterangan' in k or 'surat' in k %}{% set cls = 'pm-wide' %}{% elif
+                        'harga' in k or 'nilai' in k %}{% set cls = 'pm-num' %}{% else %}{% set cls = 'pm-std' %}{%
+                        endif %}
+                        <td class="{{ cls }}" {% if val is none %} data-raw="" {% elif ('file ba' in k or 'harga' in k
+                            or 'nilai' in k) and val and val !='-' %} data-raw="{{ val }}" {% endif %}>
+                            {% if 'file ba' in k and val and val != '-' %}
+                            <a href="{{ val }}" target="_blank"
+                                style="background: rgba(56, 139, 253, 0.15); color: #58a6ff; border: 1px solid rgba(56, 139, 253, 0.4); padding: 4px 12px; border-radius: 20px; font-size: 11px; text-decoration: none; font-weight: 600;">
+                                Lihat Dokumen
+                            </a>
+                            {% elif ('harga' in k or 'nilai' in k) and val and val != '-' %}
+                            {% set clean_val = val | string | replace('.0', '') %}
+                            {% if clean_val.isdigit() %}
+                            Rp {{ "{:,}".format(clean_val | int).replace(',', '.') }}
+                            {% else %}
+                            {{ val }}
+                            {% endif %}
+                            {% else %}
+                            {{ val if val is not none else '-' }}
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td class="text-center text-nowrap">
+                            <button type="button" class="pm-edit-btn" data-id="{{ row.id }}"
+                                onclick="openEditModal(this)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px;">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                                Edit
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="25" class="text-center text-muted py-4">Belum ada data orders.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tambah -->
+<div id="modal-tambah" class="modal-overlay pm-modal pm-add">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Tambah Order Baru</h3>
+            <button type="button" class="modal-close" onclick="closeModal('modal-tambah')" aria-label="Tutup">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="form-tambah" action="{{ url_for('admin.add_order') }}" method="POST">
+            <div class="pm-grid">
+                <div class="field"><label for="add-id_order">No Order *</label><input type="text" id="add-id_order"
+                        name="id_order" autocomplete="off" required></div>
+                <div class="field"><label for="add-client">Client / Provider</label><input type="text" id="add-client"
+                        name="client" autocomplete="off"></div>
+                <div class="field"><label for="add-nilai">Nilai (Rp)</label><input type="number" id="add-nilai"
+                        name="nilai" step="any"></div>
+                <div class="field"><label for="add-file_ba">File BA (link)</label><input type="text" id="add-file_ba"
+                        name="file_ba" autocomplete="off" placeholder="https://..."></div>
+                <div class="field full"><label for="add-keterangan">Keterangan</label><textarea id="add-keterangan"
+                        name="keterangan" rows="3"></textarea></div>
+            </div>
+            <div class="modal-actions pm-flat">
+                <button type="button" class="btn btn-secondary btn-sm"
+                    onclick="closeModal('modal-tambah')">Batal</button>
+                <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Edit -->
+<div id="modal-edit" class="modal-overlay pm-modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Edit Order: <span id="edit-label" class="mono"></span></h3>
+            <button type="button" class="modal-close" onclick="closeModal('modal-edit')" aria-label="Tutup">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <p class="pm-hint">Kolom tanggal ditulis dengan format YYYY-MM-DD. Kosongkan kolom untuk menghapus isinya.</p>
+        <form id="form-edit" method="POST">
+            <div class="pm-grid">
+                {% if 'no_order_seq' in sample %}<div class="field"><label for="edit-no_order_seq">No Order
+                        Seq</label><input type="number" id="edit-no_order_seq" name="no_order_seq" step="1"></div>{%
+                endif %}
+                {% if 'periode' in sample %}<div class="field"><label for="edit-periode">Periode</label><input
+                        type="text" id="edit-periode" name="periode" autocomplete="off"></div>{% endif %}
+                {% if 'tahun' in sample %}<div class="field"><label for="edit-tahun">Tahun</label><input type="number"
+                        id="edit-tahun" name="tahun" step="1"></div>{% endif %}
+                {% if 'tanggal' in sample %}<div class="field"><label for="edit-tanggal">Tanggal</label><input
+                        type="text" id="edit-tanggal" name="tanggal" placeholder="YYYY-MM-DD" autocomplete="off"></div>
+                {% endif %}
+                {% if 'order_type' in sample %}<div class="field"><label for="edit-order_type">Order Type</label><input
+                        type="text" id="edit-order_type" name="order_type" autocomplete="off"></div>{% endif %}
+                {% if 'dasar_order' in sample %}<div class="field full"><label for="edit-dasar_order">Dasar
+                        Order</label><textarea id="edit-dasar_order" name="dasar_order" rows="3"></textarea></div>{%
+                endif %}
+                {% if 'no_surat_modin' in sample %}<div class="field"><label for="edit-no_surat_modin">No Surat
+                        Modin</label><input type="text" id="edit-no_surat_modin" name="no_surat_modin"
+                        autocomplete="off"></div>{% endif %}
+                {% if 'jenis_order' in sample %}<div class="field"><label for="edit-jenis_order">Jenis
+                        Order</label><input type="text" id="edit-jenis_order" name="jenis_order" autocomplete="off">
+                </div>{% endif %}
+                {% if 'klasifikasi_order' in sample %}<div class="field"><label for="edit-klasifikasi_order">Klasifikasi
+                        Order</label><input type="text" id="edit-klasifikasi_order" name="klasifikasi_order"
+                        autocomplete="off"></div>{% endif %}
+                {% if 'provider' in sample %}<div class="field"><label for="edit-provider">Provider</label><input
+                        type="text" id="edit-provider" name="provider" autocomplete="off"></div>{% endif %}
+                {% if 'akhir_kontrak' in sample %}<div class="field"><label for="edit-akhir_kontrak">Akhir
+                        Kontrak</label><input type="text" id="edit-akhir_kontrak" name="akhir_kontrak"
+                        placeholder="YYYY-MM-DD" autocomplete="off"></div>{% endif %}
+                {% if 'sisa_kontrak' in sample %}<div class="field"><label for="edit-sisa_kontrak">Sisa
+                        Kontrak</label><input type="text" id="edit-sisa_kontrak" name="sisa_kontrak" autocomplete="off">
+                </div>{% endif %}
+                {% if 'no_order' in sample %}<div class="field"><label for="edit-no_order">No Order</label><input
+                        type="text" id="edit-no_order" name="no_order" autocomplete="off"></div>{% endif %}
+                {% if 'sid_1' in sample %}<div class="field"><label for="edit-sid_1">SID 1</label><input type="text"
+                        id="edit-sid_1" name="sid_1" autocomplete="off"></div>{% endif %}
+                {% if 'sid_2' in sample %}<div class="field"><label for="edit-sid_2">SID 2</label><input type="text"
+                        id="edit-sid_2" name="sid_2" autocomplete="off"></div>{% endif %}
+                {% if 'ip_address' in sample %}<div class="field"><label for="edit-ip_address">IP Address</label><input
+                        type="text" id="edit-ip_address" name="ip_address" autocomplete="off"></div>{% endif %}
+                {% if 'keterangan' in sample %}<div class="field full"><label
+                        for="edit-keterangan">Keterangan</label><textarea id="edit-keterangan" name="keterangan"
+                        rows="3"></textarea></div>{% endif %}
+                {% if 'status' in sample %}<div class="field"><label for="edit-status">Status</label><input type="text"
+                        id="edit-status" name="status" autocomplete="off"></div>{% endif %}
+                {% if 'task' in sample %}<div class="field"><label for="edit-task">Task</label><input type="text"
+                        id="edit-task" name="task" autocomplete="off"></div>{% endif %}
+                {% if 'harga' in sample %}<div class="field"><label for="edit-harga">Harga (Rp)</label><input
+                        type="number" id="edit-harga" name="harga" step="any"></div>{% endif %}
+                {% if 'no_ba' in sample %}<div class="field"><label for="edit-no_ba">No BA</label><input type="text"
+                        id="edit-no_ba" name="no_ba" autocomplete="off"></div>{% endif %}
+                {% if 'tgl_ba' in sample %}<div class="field"><label for="edit-tgl_ba">Tgl BA</label><input type="text"
+                        id="edit-tgl_ba" name="tgl_ba" placeholder="YYYY-MM-DD" autocomplete="off"></div>{% endif %}
+                {% if 'file_ba' in sample %}<div class="field"><label for="edit-file_ba">File BA (link)</label><input
+                        type="text" id="edit-file_ba" name="file_ba" autocomplete="off"></div>{% endif %}
+            </div>
+            <div class="modal-actions pm-flat">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modal-edit')">Batal</button>
+                <button type="submit" class="btn btn-primary btn-sm">Perbarui</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const EDIT_URL = "{{ url_for('admin.edit_order', id=0) }}";
+
+    function openAddModal() {
+        document.getElementById('form-tambah').reset();
+        document.getElementById('modal-tambah').classList.add('open');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('open');
+    }
+
+    // Isi form Edit dari baris tabel. Nilai asli dibaca dari data-raw bila ada
+    // (sel kosong atau yang tampilannya diformat), selain itu dari teks sel.
+    function openEditModal(btn) {
+        const tr = btn.closest('tr');
+        const heads = document.querySelectorAll('#orderTable thead th[data-key]');
+        const vals = {};
+        heads.forEach(function (th, i) {
+            const td = tr.cells[i];
+            if (!td) return;
+            vals[th.dataset.key] = (td.dataset.raw !== undefined) ? td.dataset.raw : td.textContent.trim();
+        });
+        const form = document.getElementById('form-edit');
+        form.reset();
+        Array.from(form.elements).forEach(function (el) {
+            if (el.name && Object.prototype.hasOwnProperty.call(vals, el.name)) {
+                el.value = vals[el.name];
+            }
+        });
+        form.action = EDIT_URL.replace(/0$/, btn.dataset.id);
+        document.getElementById('edit-label').textContent = vals['no_order'] || ('#' + btn.dataset.id);
+        document.getElementById('modal-edit').classList.add('open');
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay.open').forEach(function (m) { m.classList.remove('open'); });
+        }
     });
 
-    function initPagination() {
-        const table = document.getElementById("orderTableEntries");
-        const allTr = Array.from(table.getElementsByClassName("order-row"));
-        filteredRows = allTr;
-        renderTable();
-    }
-
-    function handleSearchKeyup(event) {
-        filterOrderTable();
-    }
-
-    function filterOrderTable() {
-        let input = document.getElementById("searchOrderInput");
-        let filter = input.value.toLowerCase();
-        let table = document.getElementById("orderTableEntries");
-        let allTr = Array.from(table.getElementsByClassName("order-row"));
-
-        filteredRows = allTr.filter(tr => {
-            let tds = tr.getElementsByTagName("td");
-            let found = false;
-            for (let j = 0; j < tds.length - 1; j++) {
-                if (tds[j] && tds[j].innerText.toLowerCase().indexOf(filter) > -1) {
-                    found = true;
-                    break;
-                }
+    // Live search
+    document.getElementById('searchInput').addEventListener('keyup', function () {
+        let keyword = this.value.toLowerCase();
+        let tableRows = document.querySelectorAll('#orderTable tbody tr');
+        tableRows.forEach(row => {
+            if (row.cells.length > 1) {
+                row.style.display = row.textContent.toLowerCase().includes(keyword) ? '' : 'none';
             }
-            return found;
         });
-
-        currentPage = 1;
-        renderTable();
-    }
-
-    function renderTable() {
-        let table = document.getElementById("orderTableEntries");
-        let allTr = Array.from(table.getElementsByClassName("order-row"));
-
-        allTr.forEach(tr => tr.style.display = "none");
-
-        let totalRows = filteredRows.length;
-        let totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
-
-        if (currentPage > totalPages) currentPage = totalPages;
-        if (currentPage < 1) currentPage = 1;
-
-        let start = (currentPage - 1) * rowsPerPage;
-        let end = start + rowsPerPage;
-        let pageRows = filteredRows.slice(start, end);
-
-        pageRows.forEach(tr => tr.style.display = "");
-
-        let infoText = totalRows === 0 ? "Tidak ada data yang ditemukan" : `Menampilkan ${start + 1} - ${Math.min(end, totalRows)} dari ${totalRows} data`;
-        document.getElementById("tableInfo").innerText = infoText;
-        document.getElementById("pageIndicator").innerText = `Halaman ${currentPage} dari ${totalPages}`;
-
-        let prevBtn = document.getElementById("prevBtn");
-        let nextBtn = document.getElementById("nextBtn");
-
-        prevBtn.disabled = currentPage === 1;
-
-        if (currentPage === totalPages || totalPages === 0) {
-            nextBtn.disabled = true;
-            nextBtn.className = "btn btn-secondary btn-sm";
-        } else {
-            nextBtn.disabled = false;
-            nextBtn.className = "btn btn-primary btn-sm";
-        }
-
-        let emptyRow = document.getElementById("empty-row");
-        if (emptyRow) {
-            emptyRow.style.display = totalRows === 0 ? "" : "none";
-        }
-    }
-
-    function changePage(page) {
-        let totalPages = Math.ceil(filteredRows.length / rowsPerPage) || 1;
-        if (page >= 1 && page <= totalPages) {
-            currentPage = page;
-            renderTable();
-        }
-    }
-
-    function downloadPDF() {
-        let table = document.getElementById("orderTableEntries");
-        let allTr = Array.from(table.getElementsByClassName("order-row"));
-        allTr.forEach(tr => tr.style.display = "");
-
-        window.print();
-
-        renderTable();
-    }
+    });
 </script>
 {% endblock %}
