@@ -4,27 +4,43 @@
 {% block content %}
 {% set sample = (projects[0] if projects else {}) %}
 <style>
-    #projectTable th,
-    #projectTable td {
-        padding: 16px 20px !important;
+    /* Konsistensi Tombol & Rounded Style */
+    .btn {
+        border-radius: 999px !important;
+        transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
     }
 
-    #projectTable td.pm-wide {
-        min-width: 240px;
+    .btn:active,
+    .btn:focus {
+        background-color: var(--primary) !important;
+        border-color: var(--primary) !important;
+        box-shadow: none !important;
+        outline: none !important;
     }
 
-    #projectTable td.pm-num {
-        min-width: 150px;
+    .pm-edit-btn {
+        background: rgba(240, 136, 62, 0.15);
+        color: #f0883e;
+        border: 1px solid rgba(240, 136, 62, 0.4);
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
 
-    #projectTable td.pm-std {
-        min-width: 120px;
+    .pm-edit-btn:hover {
+        background: rgba(240, 136, 62, 0.25);
     }
 
     .pm-modal .modal-box {
         max-width: 860px;
         max-height: calc(100vh - 40px);
         overflow-y: auto;
+        border-radius: 16px;
     }
 
     .pm-modal.pm-add .modal-box {
@@ -48,6 +64,12 @@
     .pm-grid textarea {
         resize: vertical;
         min-height: 76px;
+        border-radius: 8px;
+    }
+
+    .pm-grid input,
+    .pm-grid select {
+        border-radius: 8px;
     }
 
     .pm-hint {
@@ -73,7 +95,7 @@
     }
 </style>
 
-<div class="container-fluid" style="padding-top: 24px; padding-bottom: 24px; padding-left: 24px; padding-right: 24px;">
+<div class="container-fluid py-4 px-4" style="max-width: 1500px; margin: 0 auto;">
     <!-- Header Daftar Projects -->
     <div class="card p-4 rounded-4 shadow mb-4" id="printable-summary">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
@@ -90,7 +112,7 @@
             <!-- Tombol Tambah Project -->
             <div class="no-print">
                 <button type="button" class="btn btn-primary btn-sm"
-                    style="display: flex; align-items: center; gap: 6px; padding: 8px 16px;" onclick="openAddModal()">
+                    style="display: flex; align-items: center; gap: 6px; padding: 8px 18px;" onclick="openAddModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round" width="16" height="16">
                         <path d="M12 5v14M5 12h14" />
@@ -101,30 +123,20 @@
         </div>
     </div>
 
-    <!-- Toolbar Atas -->
-    <div class="card p-4 rounded-4 shadow mb-4 no-print">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div style="position: relative; max-width: 350px; flex-grow: 1;">
-                <span
-                    style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" style="width: 16px; height: 16px;">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                </span>
-                <input type="text" id="searchInput" placeholder="Cari data project..."
-                    style="width: 100%; background-color: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; padding: 10px 14px 10px 40px; color: var(--text); font-size: 13px; outline: none; transition: border-color 0.2s;"
-                    onfocus="this.style.borderColor='var(--primary)'"
-                    onblur="this.style.borderColor='var(--border-strong)'" onkeyup="handleSearchKeyup(event)">
+    <!-- Tabel Card dengan Fitur Lengkap & Rounded Button -->
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header" style="flex-wrap: wrap; gap: 12px; align-items: center;">
+            <div>
+                <p class="card-title">Matriks Detail Data Projects</p>
+                <p class="card-desc">Kelola, cari, dan edit data project langsung dari sistem database</p>
             </div>
 
-            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;" class="no-print">
                 <!-- Dropdown Pilih Jumlah Baris -->
                 <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted);">
                     <span>Tampilkan:</span>
                     <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
-                        style="padding: 8px 12px; font-size: 13px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-2); color: var(--text);">
+                        style="padding: 6px 10px; font-size: 13px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text);">
                         <option value="10" selected>10</option>
                         <option value="20">20</option>
                         <option value="40">40</option>
@@ -133,10 +145,17 @@
                     </select>
                 </div>
 
+                <!-- Kotak Search -->
+                <div style="display: flex; gap: 6px;">
+                    <input type="text" id="searchInput" placeholder="Cari project..." onkeyup="handleSearchKeyup(event)"
+                        style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); outline: none;">
+                    <button class="btn btn-primary btn-sm" style="padding: 6px 14px;"
+                        onclick="filterProjectTable()">Search</button>
+                </div>
+
                 <!-- Tombol Download PDF Landscape -->
                 <button class="btn btn-secondary btn-sm"
-                    style="display: flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 8px;"
-                    onclick="downloadPDF()">
+                    style="display: flex; align-items: center; gap: 6px; padding: 6px 14px;" onclick="downloadPDF()">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                         <polyline points="14 2 14 8 20 8" />
@@ -148,19 +167,16 @@
                 </button>
             </div>
         </div>
-    </div>
 
-    <!-- Tabel Data -->
-    <div class="card p-4 rounded-4 shadow">
-        <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
-            <table id="projectTable" class="table table-hover align-middle mb-0" style="font-size: 14px;">
-                <thead class="sticky-top" style="z-index: 1;">
+        <div class="table-wrap">
+            <table id="projectTable">
+                <thead>
                     <tr>
                         {% if projects and projects[0] %}
                         {% for key in projects[0].keys() %}
-                        <th class="text-nowrap" data-key="{{ key }}">{{ key | replace('_', ' ') | title }}</th>
+                        <th data-key="{{ key }}">{{ key | replace('_', ' ') | title }}</th>
                         {% endfor %}
-                        <th class="text-center text-nowrap no-print">Aksi</th>
+                        <th class="no-print text-center">Aksi</th>
                         {% else %}
                         <th>Data Kosong</th>
                         {% endif %}
@@ -168,13 +184,11 @@
                 </thead>
                 <tbody>
                     {% for row in projects %}
-                    <tr class="project-row">
+                    <tr class="matrix-row">
                         {% for key, val in row.items() %}
                         {% set k = key.lower() %}
-                        {% if 'nama' in k or 'project' in k %}{% set cls = 'pm-wide' %}{% elif 'revenue' in k or
-                        'target' in k %}{% set cls = 'pm-num' %}{% else %}{% set cls = 'pm-std' %}{% endif %}
-                        <td class="{{ cls }}" {% if val is none %} data-raw="" {% elif 'revenue' in k and val and val
-                            !='-' %} data-raw="{{ val }}" {% endif %}>
+                        <td {% if loop.index0==0 %}class="ip-cell" {% endif %} {% if 'revenue' in k and val and val
+                            !='-' %}data-raw="{{ val }}" {% endif %}>
                             {% if 'revenue' in k and val and val != '-' %}
                             {% set clean_val = val | string | replace('.0', '') %}
                             {% if clean_val.isdigit() %}
@@ -187,15 +201,15 @@
                             {% endif %}
                         </td>
                         {% endfor %}
-                        <td class="text-center text-nowrap no-print">
-                            <!-- Tombol Edit disamakan dengan IP Management -->
+                        <td class="text-center no-print">
                             <button type="button" class="btn btn-secondary btn-sm" data-id="{{ row.id }}"
                                 onclick="openEditModal(this)">Edit</button>
                         </td>
                     </tr>
                     {% else %}
                     <tr id="empty-row">
-                        <td colspan="25" class="text-center text-muted py-4">Belum ada data projects.</td>
+                        <td colspan="25" style="text-align: center; color: var(--text-faint); padding: 30px;">Belum ada
+                            data projects.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -204,12 +218,12 @@
 
         <!-- Komponen Paging -->
         <div class="no-print"
-            style="display: flex; justify-content: space-between; align-items: center; padding: 20px 4px 4px 4px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); margin-top: 15px;">
+            style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted);">
             <div id="tableInfo">Menampilkan data...</div>
             <div style="display: flex; gap: 8px; align-items: center;" id="paginationControls">
                 <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage - 1)" id="prevBtn"
                     title="Sebelumnya"
-                    style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
+                    style="padding: 6px 12px; display: flex; align-items: center; justify-content: center;">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="15 18 9 12 15 6" />
                     </svg>
@@ -218,7 +232,7 @@
                     1</span>
                 <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage + 1)" id="nextBtn"
                     title="Selanjutnya"
-                    style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
+                    style="padding: 6px 12px; display: flex; align-items: center; justify-content: center;">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="9 18 15 12 9 6" />
                     </svg>
@@ -228,7 +242,7 @@
     </div>
 </div>
 
-<!-- Modal Tambah Project -->
+<!-- Modal Tambah & Edit -->
 <div id="modal-tambah" class="modal-overlay pm-modal pm-add">
     <div class="modal-box">
         <div class="modal-header">
@@ -272,7 +286,6 @@
     </div>
 </div>
 
-<!-- Modal Edit Project -->
 <div id="modal-edit" class="modal-overlay pm-modal">
     <div class="modal-box">
         <div class="modal-header">
@@ -379,14 +392,14 @@
             padding: 0 !important;
         }
 
-        .table-responsive {
-            max-height: none !important;
+        .table-wrap {
             overflow: visible !important;
         }
 
         table {
             width: 100% !important;
             border-collapse: collapse !important;
+            margin-top: 5px !important;
         }
 
         th {
@@ -418,7 +431,8 @@
     });
 
     function initPagination() {
-        const allTr = Array.from(document.querySelectorAll("#projectTable tbody tr.project-row"));
+        const table = document.getElementById("projectTable");
+        const allTr = Array.from(table.getElementsByClassName("matrix-row"));
         filteredRows = allTr;
         renderTable();
     }
@@ -431,15 +445,35 @@
     }
 
     function handleSearchKeyup(event) {
-        let keyword = event.target.value.toLowerCase();
-        const allTr = Array.from(document.querySelectorAll("#projectTable tbody tr.project-row"));
-        filteredRows = allTr.filter(row => row.textContent.toLowerCase().includes(keyword));
+        filterProjectTable();
+    }
+
+    function filterProjectTable() {
+        let input = document.getElementById("searchInput");
+        let filter = input.value.toLowerCase();
+        let table = document.getElementById("projectTable");
+        let allTr = Array.from(table.getElementsByClassName("matrix-row"));
+
+        filteredRows = allTr.filter(tr => {
+            let tds = tr.getElementsByTagName("td");
+            let found = false;
+            for (let j = 0; j < tds.length; j++) {
+                if (tds[j] && tds[j].innerText.toLowerCase().indexOf(filter) > -1) {
+                    found = true;
+                    break;
+                }
+            }
+            return found;
+        });
+
         currentPage = 1;
         renderTable();
     }
 
     function renderTable() {
-        const allTr = Array.from(document.querySelectorAll("#projectTable tbody tr.project-row"));
+        let table = document.getElementById("projectTable");
+        let allTr = Array.from(table.getElementsByClassName("matrix-row"));
+
         allTr.forEach(tr => tr.style.display = "none");
 
         let totalRows = filteredRows.length;
@@ -461,7 +495,13 @@
         let prevBtn = document.getElementById("prevBtn");
         let nextBtn = document.getElementById("nextBtn");
 
-        prevBtn.disabled = currentPage === 1;
+        if (currentPage === 1 || totalPages === 0) {
+            prevBtn.disabled = true;
+            prevBtn.className = "btn btn-secondary btn-sm";
+        } else {
+            prevBtn.disabled = false;
+            prevBtn.className = "btn btn-primary btn-sm";
+        }
 
         if (currentPage === totalPages || totalPages === 0) {
             nextBtn.disabled = true;
@@ -486,7 +526,8 @@
     }
 
     function downloadPDF() {
-        const allTr = Array.from(document.querySelectorAll("#projectTable tbody tr.project-row"));
+        let table = document.getElementById("projectTable");
+        let allTr = Array.from(table.getElementsByClassName("matrix-row"));
         allTr.forEach(tr => tr.style.display = "");
         window.print();
         renderTable();
