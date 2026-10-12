@@ -1,9 +1,12 @@
 {% extends "shared/base.html" %}
+{% block title %}Executive Financial Summary {{ tahun }}{% endblock %}
+{% block page_title %}Executive Financial Summary {{ tahun }}{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4 px-4" style="max-width: 1500px; margin: 0 auto;">
 
-    <!-- HEADER & UPLOAD EXCEL / SWITCH TAHUN -->
-    <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-4">
+    <!-- HEADER & SWITCH TAHUN -->
+    <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-4 no-print">
         <div>
             <h2 class="fw-bold mb-2"><i class="fas fa-chart-bar text-danger me-2"></i>Executive Financial Summary {{
                 tahun }}</h2>
@@ -28,7 +31,7 @@
     </div>
 
     <!-- SECTION 1: QUICK STATS CARDS -->
-    <div class="row g-4 mb-5">
+    <div class="row g-4 mb-5 no-print">
         <div class="col-xl-6">
             <div class="card p-4 rounded-4 shadow-sm h-100">
                 <div class="d-flex justify-content-between align-items-center">
@@ -59,18 +62,50 @@
         </div>
     </div>
 
-    <!-- SECTION 2: TABEL MATRIKS DETAIL (format sama dengan IP Management) -->
-    <div class="card">
-        <div class="card-header">
+    <!-- SECTION 2: TABEL MATRIKS DETAIL DENGAN PAGING & SELECT ROW -->
+    <div class="card" style="margin-bottom: 20px;">
+        <!-- TOOLBAR ATAS -->
+        <div class="card-header" style="flex-wrap: wrap; gap: 12px; align-items: center;">
             <div>
                 <p class="card-title">Matriks Detail Sumber Data ({{ tahun }})</p>
                 <p class="card-desc">Daftar project tahun {{ tahun }} yang tercatat di database ({{ table_rows | length
                     }} entri)</p>
             </div>
-            <!-- KOTAK SEARCH -->
-            <div>
-                <input type="text" id="searchMatrixInput" placeholder="Cari project..." onkeyup="filterMatrixTable()"
-                    style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text);">
+
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;" class="no-print">
+                <!-- Dropdown Pilih Jumlah Baris -->
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted);">
+                    <span>Tampilkan:</span>
+                    <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                        style="padding: 6px 10px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text);">
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="40">40</option>
+                        <option value="80">80</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+
+                <!-- Kotak Search & Tombol Search -->
+                <div style="display: flex; gap: 4px;">
+                    <input type="text" id="searchMatrixInput" placeholder="Cari project..."
+                        onkeyup="handleSearchKeyup(event)"
+                        style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text);">
+                    <button class="btn btn-primary btn-sm" onclick="filterMatrixTable()">Search</button>
+                </div>
+
+                <!-- Tombol Download PDF -->
+                <button class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 6px;"
+                    onclick="downloadPDF()">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                    Download PDF
+                </button>
             </div>
         </div>
 
@@ -80,44 +115,235 @@
                 <thead>
                     <tr>
                         {% for col in table_columns %}
-                        <th>{{ col | replace('_', ' ') }}</th>
+                        <th>{{ col | replace('_', ' ') | title }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
                 {% endif %}
                 <tbody>
                     {% for row in table_rows %}
-                    <tr>
+                    <tr class="matrix-row">
                         {% for cell in row %}
                         <td{% if loop.index0==0 %} class="ip-cell" {% endif %}>{{ cell if cell is not none and cell !=
                             'nan' else '-' }}</td>
                             {% endfor %}
                     </tr>
                     {% else %}
-                    <tr>
+                    <tr id="empty-row">
                         <td colspan="{{ table_columns | length or 1 }}"
-                            style="text-align: center; color: var(--text-faint); padding: 20px;">Belum ada data project
+                            style="text-align: center; color: var(--text-faint); padding: 30px;">Belum ada data project
                             untuk tahun {{ tahun }}.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
 
-    <script>
-        function filterMatrixTable() {
-            let filter = document.getElementById("searchMatrixInput").value.toLowerCase();
-            let tr = document.getElementById("summaryMatrixTable").getElementsByTagName("tr");
-            for (let i = 1; i < tr.length; i++) {
-                let td = tr[i].getElementsByTagName("td");
-                let found = false;
-                for (let j = 0; j < td.length; j++) {
-                    if (td[j].textContent.toLowerCase().indexOf(filter) > -1) { found = true; break; }
-                }
-                tr[i].style.display = found ? "" : "none";
-            }
-        }
-    </script>
+        <!-- KOMPONEN PAGING DENGAN IKON PANAH (NEXT WARNA MERAH) -->
+        <div class="no-print"
+            style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted);">
+            <div id="tableInfo">Menampilkan data...</div>
+            <div style="display: flex; gap: 8px; align-items: center;" id="paginationControls">
+                <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage - 1)" id="prevBtn"
+                    title="Sebelumnya"
+                    style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <span id="pageIndicator" style="padding: 0 8px; font-weight: 600; color: var(--text);">Halaman 1 dari
+                    1</span>
+                <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage + 1)" id="nextBtn"
+                    title="Selanjutnya"
+                    style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- CSS KHUSUS CETAK PDF LANDSCAPE -->
+<style>
+    @media print {
+        @page {
+            size: landscape;
+            margin: 10mm;
+        }
+
+        body {
+            background: white !important;
+            color: #111 !important;
+            font-family: Arial, sans-serif !important;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .no-print,
+        header,
+        aside,
+        .sidebar,
+        nav,
+        button {
+            display: none !important;
+        }
+
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .card-title {
+            font-size: 16px !important;
+            font-weight: bold !important;
+            color: #000 !important;
+            margin-bottom: 4px !important;
+        }
+
+        .card-desc {
+            font-size: 11px !important;
+            color: #555 !important;
+            margin-bottom: 10px !important;
+        }
+
+        .table-wrap {
+            overflow: visible !important;
+        }
+
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin-top: 5px !important;
+        }
+
+        th {
+            background-color: #f2f2f2 !important;
+            color: #000 !important;
+            border: 1px solid #bbb !important;
+            padding: 6px 8px !important;
+            font-size: 10px !important;
+            text-align: left !important;
+        }
+
+        td {
+            border: 1px solid #ddd !important;
+            padding: 5px 8px !important;
+            font-size: 9.5px !important;
+            color: #333 !important;
+        }
+    }
+</style>
+
+<!-- SCRIPT JAVASCRIPT UNTUK PAGING, SEARCH & PDF -->
+<script>
+    let currentPage = 1;
+    let rowsPerPage = 10;
+    let filteredRows = [];
+
+    document.addEventListener("DOMContentLoaded", function () {
+        initPagination();
+    });
+
+    function initPagination() {
+        const table = document.getElementById("summaryMatrixTable");
+        const allTr = Array.from(table.getElementsByClassName("matrix-row"));
+        filteredRows = allTr;
+        renderTable();
+    }
+
+    function changeRowsPerPage() {
+        let select = document.getElementById("rowsPerPageSelect");
+        rowsPerPage = parseInt(select.value);
+        currentPage = 1;
+        renderTable();
+    }
+
+    function handleSearchKeyup(event) {
+        filterMatrixTable();
+    }
+
+    function filterMatrixTable() {
+        let input = document.getElementById("searchMatrixInput");
+        let filter = input.value.toLowerCase();
+        let table = document.getElementById("summaryMatrixTable");
+        let allTr = Array.from(table.getElementsByClassName("matrix-row"));
+
+        filteredRows = allTr.filter(tr => {
+            let tds = tr.getElementsByTagName("td");
+            let found = false;
+            for (let j = 0; j < tds.length; j++) {
+                if (tds[j] && tds[j].innerText.toLowerCase().indexOf(filter) > -1) {
+                    found = true;
+                    break;
+                }
+            }
+            return found;
+        });
+
+        currentPage = 1;
+        renderTable();
+    }
+
+    function renderTable() {
+        let table = document.getElementById("summaryMatrixTable");
+        let allTr = Array.from(table.getElementsByClassName("matrix-row"));
+
+        allTr.forEach(tr => tr.style.display = "none");
+
+        let totalRows = filteredRows.length;
+        let totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        let start = (currentPage - 1) * rowsPerPage;
+        let end = start + rowsPerPage;
+        let pageRows = filteredRows.slice(start, end);
+
+        pageRows.forEach(tr => tr.style.display = "");
+
+        let infoText = totalRows === 0 ? "Tidak ada data yang ditemukan" : `Menampilkan ${start + 1} - ${Math.min(end, totalRows)} dari ${totalRows} data`;
+        document.getElementById("tableInfo").innerText = infoText;
+        document.getElementById("pageIndicator").innerText = `Halaman ${currentPage} dari ${totalPages}`;
+
+        let prevBtn = document.getElementById("prevBtn");
+        let nextBtn = document.getElementById("nextBtn");
+
+        prevBtn.disabled = currentPage === 1;
+
+        if (currentPage === totalPages || totalPages === 0) {
+            nextBtn.disabled = true;
+            nextBtn.className = "btn btn-secondary btn-sm";
+        } else {
+            nextBtn.disabled = false;
+            nextBtn.className = "btn btn-primary btn-sm";
+        }
+
+        let emptyRow = document.getElementById("empty-row");
+        if (emptyRow) {
+            emptyRow.style.display = totalRows === 0 ? "" : "none";
+        }
+    }
+
+    function changePage(page) {
+        let totalPages = Math.ceil(filteredRows.length / rowsPerPage) || 1;
+        if (page >= 1 && page <= totalPages) {
+            currentPage = page;
+            renderTable();
+        }
+    }
+
+    function downloadPDF() {
+        let table = document.getElementById("summaryMatrixTable");
+        let allTr = Array.from(table.getElementsByClassName("matrix-row"));
+        allTr.forEach(tr => tr.style.display = "");
+
+        window.print();
+
+        renderTable();
+    }
+</script>
 {% endblock %}
