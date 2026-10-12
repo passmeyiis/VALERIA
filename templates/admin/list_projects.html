@@ -1,151 +1,384 @@
 {% extends "shared/base.html" %}
 {% block title %}Daftar Projects{% endblock %}
 {% block page_title %}Daftar Projects{% endblock %}
-
 {% block content %}
-<div class="card" style="margin-bottom: 20px;" id="printable-summary">
-    <div class="card-header">
-        <div>
-            <p class="card-title"><i class="fas fa-project-diagram text-danger me-2"></i>Daftar Projects</p>
-            <p class="card-desc">Keseluruhan data project dan segment sales dari database ({{ projects | length }}
-                entri)</p>
-        </div>
-        <div class="no-print">
-            <a href="{{ url_for('admin.add_project') }}" class="btn btn-primary btn-sm">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" style="width: 14px; height: 14px;">
-                    <path d="M12 5v14M5 12h14" />
-                </svg>
-                Tambah Project
-            </a>
-        </div>
-    </div>
-</div>
+{% set sample = (projects[0] if projects else {}) %}
+<style>
+    /* Tabel: padding lega + lebar minimum kolom */
+    #projectTable th,
+    #projectTable td {
+        padding: 20px 24px !important;
+    }
 
-<div class="card" style="margin-bottom: 20px;">
-    <!-- TOOLBAR ATAS DENGAN SELECT ROWS -->
-    <div class="card-header" style="flex-wrap: wrap; gap: 12px; align-items: center;">
-        <div>
-            <p class="card-title">Daftar Seluruh Data Project</p>
-            <p class="card-desc">Kelola, cari, dan edit data project langsung dari sistem database</p>
-        </div>
+    #projectTable td.pm-wide {
+        min-width: 240px;
+    }
 
-        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;" class="no-print">
-            <!-- Dropdown Pilih Jumlah Baris -->
-            <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted);">
-                <span>Tampilkan:</span>
-                <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
-                    style="padding: 6px 10px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text);">
-                    <option value="10" selected>10</option>
-                    <option value="20">20</option>
-                    <option value="40">40</option>
-                    <option value="80">80</option>
-                    <option value="100">100</option>
-                </select>
+    #projectTable td.pm-num {
+        min-width: 150px;
+    }
+
+    #projectTable td.pm-std {
+        min-width: 120px;
+    }
+
+    .pm-edit-btn {
+        background: rgba(240, 136, 62, 0.15);
+        color: #f0883e;
+        border: 1px solid rgba(240, 136, 62, 0.4);
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .pm-edit-btn:hover {
+        background: rgba(240, 136, 62, 0.25);
+    }
+
+    /* Modal Tambah / Edit */
+    .pm-modal .modal-box {
+        max-width: 860px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+    }
+
+    .pm-modal.pm-add .modal-box {
+        max-width: 640px;
+    }
+
+    .pm-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 18px;
+    }
+
+    .pm-grid .field {
+        margin-bottom: 16px;
+    }
+
+    .pm-grid .full {
+        grid-column: 1 / -1;
+    }
+
+    .pm-grid textarea {
+        resize: vertical;
+        min-height: 76px;
+    }
+
+    .pm-hint {
+        margin: -6px 0 18px;
+        font-size: 12.5px;
+        color: var(--text-muted);
+    }
+
+    .pm-modal div.modal-actions.pm-flat {
+        position: sticky;
+        bottom: -28px;
+        margin: 8px -28px -28px;
+        padding: 16px 28px;
+        background: var(--surface) !important;
+        border-color: transparent !important;
+        border-top: 1px solid var(--border) !important;
+    }
+
+    @media (max-width: 640px) {
+        .pm-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+</style>
+
+<div class="container-fluid" style="padding-top: 24px; padding-bottom: 24px; padding-left: 24px; padding-right: 24px;">
+    <!-- Header Daftar Projects -->
+    <div class="card p-4 rounded-4 shadow mb-4">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h2 class="fw-bold mb-1"><i class="fas fa-project-diagram text-danger me-2"></i>Daftar Projects</h2>
+                <p class="text-muted mb-1" style="font-size: 14px;">Keseluruhan data project dan segment sales dari
+                    database</p>
+                <div class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2 rounded-pill"
+                    style="font-size: 12px;">
+                    Total: {{ projects | length }} Data
+                </div>
             </div>
 
-            <!-- Kotak Search & Tombol Search -->
-            <div style="display: flex; gap: 4px;">
-                <input type="text" id="searchProjectInput" placeholder="Cari data project..."
-                    onkeyup="handleSearchKeyup(event)"
-                    style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text);">
-                <button class="btn btn-primary btn-sm" onclick="filterProjectTable()">Search</button>
-            </div>
-
-            <!-- Tombol Download PDF -->
-            <button class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 6px;"
-                onclick="downloadPDF()">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="16" y1="13" x2="8" y2="13" />
-                    <line x1="16" y1="17" x2="8" y2="17" />
-                    <polyline points="10 9 9 9 8 9" />
-                </svg>
-                Download PDF
-            </button>
-        </div>
-    </div>
-
-    <div class="table-wrap">
-        <table id="projectTableEntries">
-            <thead>
-                <tr>
-                    {% if projects and projects[0] %}
-                    {% for key in projects[0].keys() %}
-                    <th>{{ key | replace('_', ' ') | title }}</th>
-                    {% endfor %}
-                    <th class="no-print">Aksi</th>
-                    {% else %}
-                    <th>Data Projects Kosong</th>
-                    {% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in projects %}
-                <tr class="project-row">
-                    {% for key, val in row.items() %}
-                    <td>
-                        {% if 'revenue' in key.lower() and val and val != '-' %}
-                        {% set clean_val = val | string | replace('.0', '') %}
-                        {% if clean_val.isdigit() %}
-                        Rp {{ "{:,}".format(clean_val | int).replace(',', '.') }}
-                        {% else %}
-                        {{ val }}
-                        {% endif %}
-                        {% else %}
-                        {{ val if val is not none else '-' }}
-                        {% endif %}
-                    </td>
-                    {% endfor %}
-                    <td class="no-print">
-                        <a href="{{ url_for('admin.edit_project', id=row.id) }}"
-                            class="btn btn-secondary btn-sm">Edit</a>
-                    </td>
-                </tr>
-                {% else %}
-                <tr id="empty-row">
-                    <td colspan="25" style="text-align: center; color: var(--text-faint); padding: 30px;">
-                        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor"
-                            stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.4;">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" />
-                            <line x1="12" y1="3" x2="12" y2="15" />
+            <!-- Tombol Tambah Project (buka pop-up) -->
+            <div class="no-print">
+                <span>
+                    <button type="button" class="btn btn-primary" style="border-radius: 999px; padding: 10px 22px;"
+                        onclick="openAddModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                            stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
-                        <p style="margin: 0; font-weight: 500;">Belum ada data projects di dalam database.</p>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        Tambah Project
+                    </button>
+                </span>
+            </div>
+        </div>
     </div>
 
-    <!-- KOMPONEN PAGING DENGAN IKON PANAH -->
-    <div class="no-print"
-        style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted);">
-        <div id="tableInfo">Menampilkan data...</div>
-        <div style="display: flex; gap: 8px; align-items: center;" id="paginationControls">
-            <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage - 1)" id="prevBtn"
-                title="Sebelumnya"
-                style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="15 18 9 12 15 6" />
-                </svg>
-            </button>
-            <span id="pageIndicator" style="padding: 0 8px; font-weight: 600; color: var(--text);">Halaman 1 dari
-                1</span>
-            <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage + 1)" id="nextBtn"
-                title="Selanjutnya"
-                style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6" />
-                </svg>
-            </button>
+    <!-- Toolbar Atas: Pilihan Jumlah Baris, Search, dan Download PDF -->
+    <div class="card p-4 rounded-4 shadow mb-4 no-print">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="position: relative; max-width: 350px; flex-grow: 1;">
+                <span
+                    style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" style="width: 16px; height: 16px;">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </span>
+                <input type="text" id="searchInput" placeholder="Cari data project..."
+                    style="width: 100%; background-color: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; padding: 10px 14px 10px 40px; color: var(--text); font-size: 13px; outline: none; transition: border-color 0.2s;"
+                    onfocus="this.style.borderColor='var(--primary)'"
+                    onblur="this.style.borderColor='var(--border-strong)'" onkeyup="handleSearchKeyup(event)">
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <!-- Dropdown Jumlah Baris -->
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted);">
+                    <span>Tampilkan:</span>
+                    <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                        style="padding: 8px 12px; font-size: 13px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-2); color: var(--text);">
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="40">40</option>
+                        <option value="80">80</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+
+                <!-- Tombol Download PDF -->
+                <button class="btn btn-secondary btn-sm"
+                    style="display: flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 8px;"
+                    onclick="downloadPDF()">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                    Download PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabel Data -->
+    <div class="card p-4 rounded-4 shadow">
+        <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+            <table id="projectTable" class="table table-hover align-middle mb-0" style="font-size: 14px;">
+                <thead class="sticky-top" style="z-index: 1;">
+                    <tr>
+                        {% if projects and projects[0] %}
+                        {% for key in projects[0].keys() %}
+                        <th class="text-nowrap" data-key="{{ key }}">{{ key | replace('_', ' ') | title }}</th>
+                        {% endfor %}
+                        <th class="text-center text-nowrap no-print">Aksi</th>
+                        {% else %}
+                        <th>Data Kosong</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in projects %}
+                    <tr class="project-row">
+                        {% for key, val in row.items() %}
+                        {% set k = key.lower() %}
+                        {% if 'nama' in k or 'project' in k %}{% set cls = 'pm-wide' %}{% elif 'revenue' in k or
+                        'target' in k %}{% set cls = 'pm-num' %}{% else %}{% set cls = 'pm-std' %}{% endif %}
+                        <td class="{{ cls }}" {% if val is none %} data-raw="" {% elif 'revenue' in k and val and val
+                            !='-' %} data-raw="{{ val }}" {% endif %}>
+                            {% if 'revenue' in k and val and val != '-' %}
+                            {% set clean_val = val | string | replace('.0', '') %}
+                            {% if clean_val.isdigit() %}
+                            Rp {{ "{:,}".format(clean_val | int).replace(',', '.') }}
+                            {% else %}
+                            {{ val }}
+                            {% endif %}
+                            {% else %}
+                            {{ val if val is not none else '-' }}
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td class="text-center text-nowrap no-print">
+                            <button type="button" class="pm-edit-btn" data-id="{{ row.id }}"
+                                onclick="openEditModal(this)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px;">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                                Edit
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr id="empty-row">
+                        <td colspan="25" class="text-center text-muted py-4">Belum ada data projects.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Komponen Paging dengan Ikon Panah -->
+        <div class="no-print"
+            style="display: flex; justify-content: space-between; align-items: center; padding: 20px 4px 4px 4px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); margin-top: 15px;">
+            <div id="tableInfo">Menampilkan data...</div>
+            <div style="display: flex; gap: 8px; align-items: center;" id="paginationControls">
+                <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage - 1)" id="prevBtn"
+                    title="Sebelumnya"
+                    style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <span id="pageIndicator" style="padding: 0 8px; font-weight: 600; color: var(--text);">Halaman 1 dari
+                    1</span>
+                <button class="btn btn-secondary btn-sm" onclick="changePage(currentPage + 1)" id="nextBtn"
+                    title="Selanjutnya"
+                    style="padding: 6px 10px; display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- CSS KHUSUS CETAK PDF LANDSCAPE -->
+<!-- Modal Tambah -->
+<div id="modal-tambah" class="modal-overlay pm-modal pm-add">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Tambah Project Baru</h3>
+            <button type="button" class="modal-close" onclick="closeModal('modal-tambah')" aria-label="Tutup">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="form-tambah" action="{{ url_for('admin.add_project') }}" method="POST">
+            <div class="pm-grid">
+                <div class="field"><label for="add-id_project">Project ID *</label><input type="text"
+                        id="add-id_project" name="id_project" autocomplete="off" required></div>
+                <div class="field"><label for="add-tahun">Tahun</label><input type="number" id="add-tahun" name="tahun"
+                        step="1" placeholder="2026"></div>
+                <div class="field full"><label for="add-nama_project">Nama Project *</label><input type="text"
+                        id="add-nama_project" name="nama_project" autocomplete="off" required></div>
+                <div class="field"><label for="add-periode">Periode</label><input type="text" id="add-periode"
+                        name="periode" autocomplete="off" placeholder="Contoh: Agustus"></div>
+                <div class="field"><label for="add-jenis_project">Jenis Project</label><input type="text"
+                        id="add-jenis_project" name="jenis_project" autocomplete="off"></div>
+                <div class="field"><label for="add-pmg">PMG</label><input type="text" id="add-pmg" name="pmg"
+                        autocomplete="off"></div>
+                <div class="field"><label for="add-pm">PM</label><input type="text" id="add-pm" name="pm"
+                        autocomplete="off"></div>
+                <div class="field"><label for="add-revenue_akhir">Revenue Akhir (Rp)</label><input type="number"
+                        id="add-revenue_akhir" name="revenue_akhir" step="any"></div>
+                <div class="field"><label for="add-segment_sales">Segment Sales</label><input type="text"
+                        id="add-segment_sales" name="segment_sales" autocomplete="off"></div>
+                <div class="field full"><label for="add-klasifikasi_project">Klasifikasi Project</label><input
+                        type="text" id="add-klasifikasi_project" name="klasifikasi_project" autocomplete="off"></div>
+            </div>
+            <div class="modal-actions pm-flat">
+                <button type="button" class="btn btn-secondary btn-sm"
+                    onclick="closeModal('modal-tambah')">Batal</button>
+                <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Edit -->
+<div id="modal-edit" class="modal-overlay pm-modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Edit Project: <span id="edit-label" class="mono"></span></h3>
+            <button type="button" class="modal-close" onclick="closeModal('modal-edit')" aria-label="Tutup">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <p class="pm-hint">Kolom tanggal ditulis dengan format YYYY-MM-DD. Kosongkan kolom untuk menghapus isinya.</p>
+        <form id="form-edit" method="POST">
+            <div class="pm-grid">
+                {% if 'project_no' in sample %}<div class="field"><label for="edit-project_no">Project No</label><input
+                        type="number" id="edit-project_no" name="project_no" step="1"></div>{% endif %}
+                {% if 'project_id' in sample %}<div class="field"><label for="edit-project_id">Project Id</label><input
+                        type="text" id="edit-project_id" name="project_id" autocomplete="off"></div>{% endif %}
+                {% if 'tahun' in sample %}<div class="field"><label for="edit-tahun">Tahun</label><input type="number"
+                        id="edit-tahun" name="tahun" step="1"></div>{% endif %}
+                {% if 'periode' in sample %}<div class="field"><label for="edit-periode">Periode</label><input
+                        type="text" id="edit-periode" name="periode" autocomplete="off"></div>{% endif %}
+                {% if 'nama_project' in sample %}<div class="field full"><label for="edit-nama_project">Nama
+                        Project</label><input type="text" id="edit-nama_project" name="nama_project" autocomplete="off">
+                </div>{% endif %}
+                {% if 'jenis_project' in sample %}<div class="field"><label for="edit-jenis_project">Jenis
+                        Project</label><input type="text" id="edit-jenis_project" name="jenis_project"
+                        autocomplete="off"></div>{% endif %}
+                {% if 'pmg' in sample %}<div class="field"><label for="edit-pmg">PMG</label><input type="text"
+                        id="edit-pmg" name="pmg" autocomplete="off"></div>{% endif %}
+                {% if 'pm' in sample %}<div class="field"><label for="edit-pm">PM</label><input type="text" id="edit-pm"
+                        name="pm" autocomplete="off"></div>{% endif %}
+                {% if 'revenue_akhir' in sample %}<div class="field"><label for="edit-revenue_akhir">Revenue Akhir
+                        (Rp)</label><input type="number" id="edit-revenue_akhir" name="revenue_akhir" step="any"></div>
+                {% endif %}
+                {% if 'segment_sales' in sample %}<div class="field"><label for="edit-segment_sales">Segment
+                        Sales</label><input type="text" id="edit-segment_sales" name="segment_sales" autocomplete="off">
+                </div>{% endif %}
+                {% if 'klasifikasi_project' in sample %}<div class="field"><label
+                        for="edit-klasifikasi_project">Klasifikasi Project</label><input type="text"
+                        id="edit-klasifikasi_project" name="klasifikasi_project" autocomplete="off"></div>{% endif %}
+                {% if 'nama_am' in sample %}<div class="field"><label for="edit-nama_am">Nama AM</label><input
+                        type="text" id="edit-nama_am" name="nama_am" autocomplete="off"></div>{% endif %}
+                {% if 'tanggal_project_charter' in sample %}<div class="field"><label
+                        for="edit-tanggal_project_charter">Tanggal Project Charter</label><input type="text"
+                        id="edit-tanggal_project_charter" name="tanggal_project_charter" placeholder="YYYY-MM-DD"
+                        autocomplete="off"></div>{% endif %}
+                {% if 'target' in sample %}<div class="field"><label for="edit-target">Target</label><input type="text"
+                        id="edit-target" name="target" autocomplete="off"></div>{% endif %}
+                {% if 'nama_pic' in sample %}<div class="field"><label for="edit-nama_pic">Nama PIC</label><input
+                        type="text" id="edit-nama_pic" name="nama_pic" autocomplete="off"></div>{% endif %}
+                {% if 'status' in sample %}<div class="field"><label for="edit-status">Status</label><input type="text"
+                        id="edit-status" name="status" autocomplete="off"></div>{% endif %}
+                {% if 'order_type' in sample %}<div class="field"><label for="edit-order_type">Order Type</label><input
+                        type="text" id="edit-order_type" name="order_type" autocomplete="off"></div>{% endif %}
+                {% if 'konfigurasi' in sample %}<div class="field full"><label
+                        for="edit-konfigurasi">Konfigurasi</label><textarea id="edit-konfigurasi" name="konfigurasi"
+                        rows="3"></textarea></div>{% endif %}
+                {% if 'integrasi' in sample %}<div class="field full"><label
+                        for="edit-integrasi">Integrasi</label><textarea id="edit-integrasi" name="integrasi"
+                        rows="3"></textarea></div>{% endif %}
+                {% if 'tshoot' in sample %}<div class="field full"><label
+                        for="edit-tshoot">Troubleshoot</label><textarea id="edit-tshoot" name="tshoot"
+                        rows="3"></textarea></div>{% endif %}
+                {% if 'keterangan' in sample %}<div class="field full"><label
+                        for="edit-keterangan">Keterangan</label><textarea id="edit-keterangan" name="keterangan"
+                        rows="3"></textarea></div>{% endif %}
+            </div>
+            <div class="modal-actions pm-flat">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modal-edit')">Batal</button>
+                <button type="submit" class="btn btn-primary btn-sm">Perbarui</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- CSS Khusus Cetak PDF Landscape -->
 <style>
     @media print {
         @page {
@@ -165,11 +398,7 @@
         aside,
         .sidebar,
         nav,
-        button,
-        #printable-summary,
-        .card-header select,
-        .card-header input,
-        .card-header button {
+        button {
             display: none !important;
         }
 
@@ -180,27 +409,14 @@
             padding: 0 !important;
         }
 
-        .card-title {
-            font-size: 16px !important;
-            font-weight: bold !important;
-            color: #000 !important;
-            margin-bottom: 4px !important;
-        }
-
-        .card-desc {
-            font-size: 11px !important;
-            color: #555 !important;
-            margin-bottom: 10px !important;
-        }
-
-        .table-wrap {
+        .table-responsive {
+            max-height: none !important;
             overflow: visible !important;
         }
 
         table {
             width: 100% !important;
             border-collapse: collapse !important;
-            margin-top: 5px !important;
         }
 
         th {
@@ -221,8 +437,8 @@
     }
 </style>
 
-<!-- SCRIPT JAVASCRIPT -->
 <script>
+    const EDIT_URL = "{{ url_for('admin.edit_project', id=0) }}";
     let currentPage = 1;
     let rowsPerPage = 10;
     let filteredRows = [];
@@ -232,8 +448,7 @@
     });
 
     function initPagination() {
-        const table = document.getElementById("projectTableEntries");
-        const allTr = Array.from(table.getElementsByClassName("project-row"));
+        const allTr = Array.from(document.querySelectorAll("#projectTable tbody tr.project-row"));
         filteredRows = allTr;
         renderTable();
     }
@@ -246,25 +461,11 @@
     }
 
     function handleSearchKeyup(event) {
-        filterProjectTable();
-    }
+        let keyword = event.target.value.toLowerCase();
+        const allTr = Array.from(document.querySelectorAll("#projectTable tbody tr.project-row"));
 
-    function filterProjectTable() {
-        let input = document.getElementById("searchProjectInput");
-        let filter = input.value.toLowerCase();
-        let table = document.getElementById("projectTableEntries");
-        let allTr = Array.from(table.getElementsByClassName("project-row"));
-
-        filteredRows = allTr.filter(tr => {
-            let tds = tr.getElementsByTagName("td");
-            let found = false;
-            for (let j = 0; j < tds.length - 1; j++) {
-                if (tds[j] && tds[j].innerText.toLowerCase().indexOf(filter) > -1) {
-                    found = true;
-                    break;
-                }
-            }
-            return found;
+        filteredRows = allTr.filter(row => {
+            return row.textContent.toLowerCase().includes(keyword);
         });
 
         currentPage = 1;
@@ -272,9 +473,7 @@
     }
 
     function renderTable() {
-        let table = document.getElementById("projectTableEntries");
-        let allTr = Array.from(table.getElementsByClassName("project-row"));
-
+        const allTr = Array.from(document.querySelectorAll("#projectTable tbody tr.project-row"));
         allTr.forEach(tr => tr.style.display = "none");
 
         let totalRows = filteredRows.length;
@@ -321,13 +520,46 @@
     }
 
     function downloadPDF() {
-        let table = document.getElementById("projectTableEntries");
-        let allTr = Array.from(table.getElementsByClassName("project-row"));
+        const allTr = Array.from(document.querySelectorAll("#projectTable tbody tr.project-row"));
         allTr.forEach(tr => tr.style.display = "");
-
         window.print();
-
         renderTable();
     }
+
+    function openAddModal() {
+        document.getElementById('form-tambah').reset();
+        document.getElementById('modal-tambah').classList.add('open');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('open');
+    }
+
+    function openEditModal(btn) {
+        const tr = btn.closest('tr');
+        const heads = document.querySelectorAll('#projectTable thead th[data-key]');
+        const vals = {};
+        heads.forEach(function (th, i) {
+            const td = tr.cells[i];
+            if (!td) return;
+            vals[th.dataset.key] = (td.dataset.raw !== undefined) ? td.dataset.raw : td.textContent.trim();
+        });
+        const form = document.getElementById('form-edit');
+        form.reset();
+        Array.from(form.elements).forEach(function (el) {
+            if (el.name && Object.prototype.hasOwnProperty.call(vals, el.name)) {
+                el.value = vals[el.name];
+            }
+        });
+        form.action = EDIT_URL.replace(/0$/, btn.dataset.id);
+        document.getElementById('edit-label').textContent = vals['project_id'] || ('#' + btn.dataset.id);
+        document.getElementById('modal-edit').classList.add('open');
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay.open').forEach(function (m) { m.classList.remove('open'); });
+        }
+    });
 </script>
 {% endblock %}
